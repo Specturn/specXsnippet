@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Specturn Micro-Decision Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'accent': '#00C897',
+                        'primary': '#4A47A3',
+                        'bg-main': '#F6F7F9',
+                        'card-bg': '#FFFFFF',
+                        'text-main': '#2C3E50'
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif']
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.6s ease-out',
+                        'scale-in': 'scaleIn 0.3s ease-out',
+                        'slide-down': 'slideDown 0.4s ease-out',
+                        'bounce-in': 'bounceIn 0.6s ease-out',
+                        'shimmer': 'shimmer 2s linear infinite',
+                        'toast-in': 'toastIn 0.4s ease-out',
+                        'checkmark': 'checkmark 0.6s ease-out',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200px 0; }
+            100% { background-position: calc(200px + 100%) 0; }
+        }
+        
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(100px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes checkmark {
+            0% { opacity: 0; transform: scale(0) rotate(45deg); }
+            50% { opacity: 1; transform: scale(1.2) rotate(45deg); }
+            100% { opacity: 1; transform: scale(1) rotate(45deg); }
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 200, 151, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(0, 200, 151, 0.6); }
+        }
+        
+        .shimmer-bg {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200px 100%;
+            animation: shimmer 2s linear infinite;
+        }
+        
+        .hover-scale {
+            transition: all 0.2s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.02);
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .form-focus {
+            transition: all 0.3s ease;
+        }
+        
+        .form-focus:focus {
+            border-color: #00C897;
+            box-shadow: 0 0 0 3px rgba(0, 200, 151, 0.1);
+            transform: scale(1.01);
+        }
+        
+        .decision-card {
+            transition: all 0.3s ease;
+        }
+        
+        .decision-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00C897, #4A47A3);
+            border-radius: 2px;
+        }
+        
+        .confidence-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+        }
+        
+        .confidence-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00C897, #4A47A3);
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .confidence-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00C897, #4A47A3);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #4A47A3 0%, #00C897 100%);
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .stagger-animation {
+            animation-delay: calc(var(--stagger) * 0.1s);
+        }
+    </style>
+</head>
+<body class="bg-bg-main text-text-main font-poppins">
+    <!-- Navigation -->
+    <nav class="bg-card-bg shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
+                        <span class="text-white text-xl font-bold">S</span>
+                    </div>
+                    <h1 class="text-2xl font-bold text-primary">Specturn</h1>
+                </div>
+                
+                <div class="flex space-x-1">
+                    <button class="nav-item active px-4 py-2 rounded-lg font-medium text-primary" data-view="dashboard">
+                        🏠 Dashboard
+                    </button>
+                    <button class="nav-item px-4 py-2 rounded-lg font-medium text-gray-600 hover:text-primary" data-view="journal">
+                        📚 Journal
+                    </button>
+                    <button class="nav-item px-4 py-2 rounded-lg font-medium text-gray-600 hover:text-primary" data-view="insights">
+                        📊 Insights
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard View -->
+    <div id="dashboard-view" class="view-content">
+        <div class="max-w-6xl mx-auto p-6">
+            <!-- Welcome Header -->
+            <div class="text-center mb-12 animate-slide-down">
+                <h2 class="text-4xl font-bold text-primary mb-4">Welcome back! 👋</h2>
+                <p class="text-xl text-gray-600">Ready to make some great decisions today?</p>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg hover-scale animate-fade-in-up" style="--stagger: 1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-primary">Decision Streak</h3>
+                        <span class="text-2xl">🔥</span>
+                    </div>
+                    <p class="text-3xl font-bold text-accent" id="streak-count">0</p>
+                    <p class="text-sm text-gray-600 mt-2">Days in a row</p>
+                </div>
+                
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg hover-scale animate-fade-in-up" style="--stagger: 2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-primary">Total Decisions</h3>
+                        <span class="text-2xl">📝</span>
+                    </div>
+                    <p class="text-3xl font-bold text-accent" id="total-decisions">0</p>
+                    <p class="text-sm text-gray-600 mt-2">Logged so far</p>
+                </div>
+                
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg hover-scale animate-fade-in-up" style="--stagger: 3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-primary">Avg Confidence</h3>
+                        <span class="text-2xl">💪</span>
+                    </div>
+                    <p class="text-3xl font-bold text-accent" id="avg-confidence">0</p>
+                    <p class="text-sm text-gray-600 mt-2">Out of 10</p>
+                </div>
+            </div>
+            
+            <!-- Main Action Button -->
+            <div class="text-center animate-bounce-in">
+                <button id="log-decision-btn" class="gradient-bg text-white px-12 py-6 rounded-2xl text-xl font-bold btn-hover animate-pulse-glow">
+                    <span class="flex items-center space-x-3">
+                        <span class="text-2xl">✨</span>
+                        <span>Log a New Decision</span>
+                    </span>
+                </button>
+            </div>
+            
+            <!-- Recent Decisions Preview -->
+            <div class="mt-16">
+                <h3 class="text-2xl font-bold text-primary mb-6">Recent Decisions</h3>
+                <div id="recent-decisions" class="space-y-4">
+                    <!-- Recent decisions will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Journal View -->
+    <div id="journal-view" class="view-content hidden">
+        <div class="max-w-6xl mx-auto p-6">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold text-primary">Decision Journal</h2>
+                <button id="new-decision-btn" class="gradient-bg text-white px-6 py-3 rounded-xl font-semibold btn-hover">
+                    <span class="flex items-center space-x-2">
+                        <span>+</span>
+                        <span>New Decision</span>
+                    </span>
+                </button>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="loading-skeleton" class="space-y-4 hidden">
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg">
+                    <div class="shimmer-bg h-6 rounded mb-4"></div>
+                    <div class="shimmer-bg h-4 rounded mb-2"></div>
+                    <div class="shimmer-bg h-4 rounded w-3/4 mb-4"></div>
+                    <div class="shimmer-bg h-8 rounded w-24"></div>
+                </div>
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg">
+                    <div class="shimmer-bg h-6 rounded mb-4"></div>
+                    <div class="shimmer-bg h-4 rounded mb-2"></div>
+                    <div class="shimmer-bg h-4 rounded w-2/3 mb-4"></div>
+                    <div class="shimmer-bg h-8 rounded w-24"></div>
+                </div>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="text-center py-16 hidden">
+                <div class="text-8xl mb-6">🌟</div>
+                <h3 class="text-2xl font-bold text-primary mb-4">Your Decision Journey Starts Here</h3>
+                <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                    Every great entrepreneur starts with their first decision. 
+                    Ready to begin tracking yours?
+                </p>
+                <button id="first-decision-btn" class="gradient-bg text-white px-8 py-4 rounded-xl font-semibold btn-hover">
+                    Log Your First Decision
+                </button>
+            </div>
+            
+            <!-- Decisions List -->
+            <div id="decisions-list" class="space-y-6">
+                <!-- Decision cards will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights View -->
+    <div id="insights-view" class="view-content hidden">
+        <div class="max-w-6xl mx-auto p-6">
+            <h2 class="text-3xl font-bold text-primary mb-8">Decision Insights</h2>
+            
+            <!-- Insights Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg text-center">
+                    <div class="text-3xl mb-2">📊</div>
+                    <h3 class="font-semibold text-primary mb-2">Total Decisions</h3>
+                    <p class="text-2xl font-bold text-accent" id="insights-total">0</p>
+                </div>
+                
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg text-center">
+                    <div class="text-3xl mb-2">✅</div>
+                    <h3 class="font-semibold text-primary mb-2">Good Outcomes</h3>
+                    <p class="text-2xl font-bold text-green-500" id="insights-good">0%</p>
+                </div>
+                
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg text-center">
+                    <div class="text-3xl mb-2">⚖️</div>
+                    <h3 class="font-semibold text-primary mb-2">Neutral</h3>
+                    <p class="text-2xl font-bold text-yellow-500" id="insights-neutral">0%</p>
+                </div>
+                
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg text-center">
+                    <div class="text-3xl mb-2">❌</div>
+                    <h3 class="font-semibold text-primary mb-2">Regrets</h3>
+                    <p class="text-2xl font-bold text-red-500" id="insights-regret">0%</p>
+                </div>
+            </div>
+            
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold text-primary mb-6">Decision Outcomes</h3>
+                    <canvas id="outcomes-chart" width="400" height="300"></canvas>
+                </div>
+                
+                <div class="bg-card-bg rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold text-primary mb-6">Decisions by Category</h3>
+                    <canvas id="categories-chart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decision Form Modal -->
+    <div id="decision-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card-bg rounded-3xl p-8 w-full max-w-2xl max-h-screen overflow-y-auto shadow-2xl animate-scale-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-primary">Log New Decision</h2>
+                    <button id="close-modal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+                </div>
+                
+                <form id="decision-form" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold mb-3 text-primary">Decision Title *</label>
+                        <input type="text" id="decision-title" required 
+                               class="w-full p-4 border-2 border-gray-200 rounded-xl form-focus font-medium"
+                               placeholder="What decision did you make?">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold mb-3 text-primary">Description *</label>
+                        <textarea id="decision-description" required rows="4"
+                                  class="w-full p-4 border-2 border-gray-200 rounded-xl form-focus font-medium resize-none"
+                                  placeholder="Describe your decision in detail..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold mb-3 text-primary">Category *</label>
+                        <select id="decision-category" required 
+                                class="w-full p-4 border-2 border-gray-200 rounded-xl form-focus font-medium">
+                            <option value="">Select a category...</option>
+                            <option value="Business">🏢 Business</option>
+                            <option value="Finance">💰 Finance</option>
+                            <option value="Career">👔 Career</option>
+                            <option value="Personal">🧠 Personal</option>
+                            <option value="Health">🏃 Health</option>
+                            <option value="Relationships">❤️ Relationships</option>
+                            <option value="Education">📚 Education</option>
+                            <option value="Technology">💻 Technology</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold mb-3 text-primary">
+                            Confidence Level: <span id="confidence-value" class="text-accent font-bold">5</span>/10
+                        </label>
+                        <input type="range" id="confidence-slider" min="1" max="10" value="5" 
+                               class="w-full confidence-slider">
+                        <div class="flex justify-between text-xs text-gray-500 mt-2">
+                            <span>Not confident</span>
+                            <span>Very confident</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-6">
+                        <button type="submit" id="save-decision" 
+                                class="flex-1 gradient-bg text-white py-4 rounded-xl font-semibold text-lg btn-hover">
+                            Save Decision
+                        </button>
+                        <button type="button" id="cancel-decision" 
+                                class="flex-1 bg-gray-200 text-gray-700 py-4 rounded-xl font-semibold text-lg btn-hover">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clarity Boost Modal -->
+    <div id="clarity-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-card-bg rounded-3xl p-8 w-full max-w-lg shadow-2xl animate-scale-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-primary">💡 Boost Clarity</h2>
+                    <button id="close-clarity-modal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+                </div>
+                
+                <div class="mb-6">
+                    <p id="clarity-question" class="text-primary font-medium mb-4"></p>
+                    <textarea id="clarity-response" rows="4" 
+                              class="w-full p-4 border-2 border-gray-200 rounded-xl form-focus resize-none"
+                              placeholder="Share your thoughts..."></textarea>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button id="save-clarity" class="flex-1 gradient-bg text-white py-3 rounded-xl font-semibold btn-hover">
+                        Save Response
+                    </button>
+                    <button id="cancel-clarity" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold btn-hover">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-3">
+        <!-- Toast notifications will appear here -->
+    </div>
+
+    <!-- Success Checkmark Overlay -->
+    <div id="success-overlay" class="fixed inset-0 bg-black bg-opacity-30 hidden z-60 flex items-center justify-center">
+        <div class="bg-card-bg rounded-full p-8 shadow-2xl">
+            <div class="w-16 h-16 text-accent text-6xl animate-checkmark">✓</div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let decisions = JSON.parse(localStorage.getItem('specturn_decisions') || '[]');
+        let currentView = 'dashboard';
+        let currentDecisionId = null;
+        
+        // Clarity boost questions
+        const clarityQuestions = [
+            "What assumptions are you making about this decision?",
+            "How might this decision look in 6 months?",
+            "What would you advise a friend in this situation?",
+            "What's the worst-case scenario if this goes wrong?",
+            "What information are you missing to feel more confident?",
+            "How does this align with your long-term goals?",
+            "What would happen if you delayed this decision?",
+            "Who else might be affected by this choice?"
+        ];
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            updateDashboardStats();
+            renderRecentDecisions();
+            switchView('dashboard');
+        });
+
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const view = e.target.dataset.view;
+                    switchView(view);
+                });
+            });
+
+            // Decision form
+            document.getElementById('log-decision-btn').addEventListener('click', showDecisionModal);
+            document.getElementById('new-decision-btn').addEventListener('click', showDecisionModal);
+            document.getElementById('first-decision-btn').addEventListener('click', showDecisionModal);
+            document.getElementById('close-modal').addEventListener('click', hideDecisionModal);
+            document.getElementById('cancel-decision').addEventListener('click', hideDecisionModal);
+            document.getElementById('decision-form').addEventListener('submit', handleDecisionSubmit);
+            document.getElementById('confidence-slider').addEventListener('input', updateConfidenceValue);
+
+            // Clarity modal
+            document.getElementById('close-clarity-modal').addEventListener('click', hideClarityModal);
+            document.getElementById('cancel-clarity').addEventListener('click', hideClarityModal);
+            document.getElementById('save-clarity').addEventListener('click', saveClarityResponse);
+        }
+
+        function switchView(viewName) {
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active', 'text-primary');
+                item.classList.add('text-gray-600');
+            });
+            
+            document.querySelector(`[data-view="${viewName}"]`).classList.add('active', 'text-primary');
+            document.querySelector(`[data-view="${viewName}"]`).classList.remove('text-gray-600');
+
+            // Hide all views
+            document.querySelectorAll('.view-content').forEach(view => {
+                view.classList.add('hidden');
+            });
+
+            // Show selected view
+            document.getElementById(`${viewName}-view`).classList.remove('hidden');
+            currentView = viewName;
+
+            // Load view-specific content
+            if (viewName === 'journal') {
+                loadJournalView();
+            } else if (viewName === 'insights') {
+                loadInsightsView();
+            } else if (viewName === 'dashboard') {
+                updateDashboardStats();
+                renderRecentDecisions();
+            }
+        }
+
+        function loadJournalView() {
+            const loadingSkeleton = document.getElementById('loading-skeleton');
+            const emptyState = document.getElementById('empty-state');
+            const decisionsList = document.getElementById('decisions-list');
+
+            // Show loading state
+            loadingSkeleton.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            decisionsList.classList.add('hidden');
+
+            // Simulate loading delay
+            setTimeout(() => {
+                loadingSkeleton.classList.add('hidden');
+                
+                if (decisions.length === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    decisionsList.classList.remove('hidden');
+                    renderDecisions();
+                }
+            }, 1000);
+        }
+
+        function renderDecisions() {
+            const container = document.getElementById('decisions-list');
+            const sortedDecisions = [...decisions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            container.innerHTML = sortedDecisions.map((decision, index) => {
+                const date = new Date(decision.createdAt);
+                const categoryEmojis = {
+                    'Business': '🏢',
+                    'Finance': '💰',
+                    'Career': '👔',
+                    'Personal': '🧠',
+                    'Health': '🏃',
+                    'Relationships': '❤️',
+                    'Education': '📚',
+                    'Technology': '💻'
+                };
+                
+                return `
+                    <div class="decision-card bg-card-bg rounded-2xl p-6 shadow-lg animate-fade-in-up stagger-animation" 
+                         style="--stagger: ${index + 1}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h3 class="text-xl font-bold text-primary">${decision.title}</h3>
+                                    <span class="px-3 py-1 bg-accent bg-opacity-10 text-accent rounded-full text-sm font-medium">
+                                        ${categoryEmojis[decision.category]} ${decision.category}
+                                    </span>
+                                </div>
+                                <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                                    <span>📅 ${date.toLocaleDateString()}</span>
+                                    <span>💪 Confidence: ${decision.confidence}/10</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-700 mb-4 leading-relaxed">${decision.description}</p>
+                        
+                        ${decision.clarityBoosts && decision.clarityBoosts.length > 0 ? `
+                            <div class="mb-4">
+                                <h4 class="font-semibold text-primary mb-2">💡 Clarity Boosts:</h4>
+                                <div class="space-y-2">
+                                    ${decision.clarityBoosts.map(boost => `
+                                        <div class="bg-accent bg-opacity-5 p-3 rounded-xl border-l-4 border-accent">
+                                            <p class="text-sm font-medium text-primary mb-1">${boost.question}</p>
+                                            <p class="text-sm text-gray-700">${boost.response}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex justify-between items-center">
+                            <button onclick="boostClarity('${decision.id}')" 
+                                    class="bg-accent text-white px-4 py-2 rounded-lg font-medium btn-hover text-sm">
+                                💡 Boost Clarity
+                            </button>
+                            <span class="text-xs text-gray-500">${formatTimeAgo(date)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRecentDecisions() {
+            const container = document.getElementById('recent-decisions');
+            const recentDecisions = [...decisions]
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 3);
+            
+            if (recentDecisions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <div class="text-4xl mb-2">📝</div>
+                        <p>No decisions logged yet. Start your journey!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = recentDecisions.map((decision, index) => {
+                const date = new Date(decision.createdAt);
+                return `
+                    <div class="bg-card-bg rounded-xl p-4 shadow-md hover-scale animate-fade-in-up stagger-animation" 
+                         style="--stagger: ${index + 1}">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="font-semibold text-primary">${decision.title}</h4>
+                                <p class="text-sm text-gray-600">${decision.category} • ${formatTimeAgo(date)}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium text-accent">${decision.confidence}/10</div>
+                                <div class="text-xs text-gray-500">confidence</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateDashboardStats() {
+            const totalDecisions = decisions.length;
+            const avgConfidence = totalDecisions > 0 ? 
+                Math.round(decisions.reduce((sum, d) => sum + d.confidence, 0) / totalDecisions) : 0;
+            
+            // Calculate streak (simplified - consecutive days with decisions)
+            const streak = calculateStreak();
+            
+            document.getElementById('streak-count').textContent = streak;
+            document.getElementById('total-decisions').textContent = totalDecisions;
+            document.getElementById('avg-confidence').textContent = avgConfidence;
+        }
+
+        function calculateStreak() {
+            if (decisions.length === 0) return 0;
+            
+            const today = new Date();
+            const sortedDecisions = [...decisions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            let streak = 0;
+            let currentDate = new Date(today);
+            
+            for (let i = 0; i < 30; i++) { // Check last 30 days
+                const dayDecisions = sortedDecisions.filter(d => {
+                    const decisionDate = new Date(d.createdAt);
+                    return decisionDate.toDateString() === currentDate.toDateString();
+                });
+                
+                if (dayDecisions.length > 0) {
+                    streak++;
+                } else if (streak > 0) {
+                    break;
+                }
+                
+                currentDate.setDate(currentDate.getDate() - 1);
+            }
+            
+            return streak;
+        }
+
+        function loadInsightsView() {
+            updateInsightsStats();
+            setTimeout(() => {
+                renderCharts();
+            }, 100);
+        }
+
+        function updateInsightsStats() {
+            const total = decisions.length;
+            const withOutcomes = decisions.filter(d => d.outcome);
+            
+            const good = withOutcomes.filter(d => d.outcome === 'Good').length;
+            const neutral = withOutcomes.filter(d => d.outcome === 'Neutral').length;
+            const regret = withOutcomes.filter(d => d.outcome === 'Regret').length;
+            
+            const totalWithOutcomes = withOutcomes.length;
+            
+            document.getElementById('insights-total').textContent = total;
+            document.getElementById('insights-good').textContent = totalWithOutcomes > 0 ? 
+                Math.round((good / totalWithOutcomes) * 100) + '%' : '0%';
+            document.getElementById('insights-neutral').textContent = totalWithOutcomes > 0 ? 
+                Math.round((neutral / totalWithOutcomes) * 100) + '%' : '0%';
+            document.getElementById('insights-regret').textContent = totalWithOutcomes > 0 ? 
+                Math.round((regret / totalWithOutcomes) * 100) + '%' : '0%';
+        }
+
+        function renderCharts() {
+            renderOutcomesChart();
+            renderCategoriesChart();
+        }
+
+        function renderOutcomesChart() {
+            const ctx = document.getElementById('outcomes-chart').getContext('2d');
+            
+            if (window.outcomesChart) {
+                window.outcomesChart.destroy();
+            }
+            
+            const withOutcomes = decisions.filter(d => d.outcome);
+            const good = withOutcomes.filter(d => d.outcome === 'Good').length;
+            const neutral = withOutcomes.filter(d => d.outcome === 'Neutral').length;
+            const regret = withOutcomes.filter(d => d.outcome === 'Regret').length;
+            
+            window.outcomesChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Good', 'Neutral', 'Regret'],
+                    datasets: [{
+                        data: [good, neutral, regret],
+                        backgroundColor: ['#00C897', '#FFC107', '#FF5722'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    family: 'Poppins',
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 1000
+                    }
+                }
+            });
+        }
+
+        function renderCategoriesChart() {
+            const ctx = document.getElementById('categories-chart').getContext('2d');
+            
+            if (window.categoriesChart) {
+                window.categoriesChart.destroy();
+            }
+            
+            const categoryCounts = {};
+            decisions.forEach(d => {
+                categoryCounts[d.category] = (categoryCounts[d.category] || 0) + 1;
+            });
+            
+            const labels = Object.keys(categoryCounts);
+            const data = Object.values(categoryCounts);
+            
+            window.categoriesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Decisions',
+                        data: data,
+                        backgroundColor: '#00C897',
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                font: {
+                                    family: 'Poppins'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Poppins'
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        function showDecisionModal() {
+            document.getElementById('decision-modal').classList.remove('hidden');
+        }
+
+        function hideDecisionModal() {
+            document.getElementById('decision-modal').classList.add('hidden');
+            document.getElementById('decision-form').reset();
+            document.getElementById('confidence-value').textContent = '5';
+        }
+
+        function updateConfidenceValue() {
+            const value = document.getElementById('confidence-slider').value;
+            document.getElementById('confidence-value').textContent = value;
+        }
+
+        async function handleDecisionSubmit(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('save-decision');
+            submitBtn.textContent = 'Saving...';
+            submitBtn.disabled = true;
+            
+            try {
+                const decision = {
+                    id: Date.now().toString(),
+                    title: document.getElementById('decision-title').value,
+                    description: document.getElementById('decision-description').value,
+                    category: document.getElementById('decision-category').value,
+                    confidence: parseInt(document.getElementById('confidence-slider').value),
+                    createdAt: new Date().toISOString(),
+                    clarityBoosts: []
+                };
+                
+                decisions.push(decision);
+                localStorage.setItem('specturn_decisions', JSON.stringify(decisions));
+                
+                hideDecisionModal();
+                showSuccessAnimation();
+                showToast('Decision saved successfully! 🎉', 'success');
+                
+                // Update views
+                updateDashboardStats();
+                renderRecentDecisions();
+                
+                if (currentView === 'journal') {
+                    renderDecisions();
+                }
+                
+            } catch (error) {
+                showToast('Error saving decision. Please try again.', 'error');
+            } finally {
+                submitBtn.textContent = 'Save Decision';
+                submitBtn.disabled = false;
+            }
+        }
+
+        function boostClarity(decisionId) {
+            currentDecisionId = decisionId;
+            const randomQuestion = clarityQuestions[Math.floor(Math.random() * clarityQuestions.length)];
+            document.getElementById('clarity-question').textContent = randomQuestion;
+            document.getElementById('clarity-response').value = '';
+            document.getElementById('clarity-modal').classList.remove('hidden');
+        }
+
+        function hideClarityModal() {
+            document.getElementById('clarity-modal').classList.add('hidden');
+            currentDecisionId = null;
+        }
+
+        function saveClarityResponse() {
+            const response = document.getElementById('clarity-response').value.trim();
+            if (!response) {
+                showToast('Please enter a response', 'warning');
+                return;
+            }
+            
+            const decision = decisions.find(d => d.id === currentDecisionId);
+            if (decision) {
+                if (!decision.clarityBoosts) {
+                    decision.clarityBoosts = [];
+                }
+                
+                decision.clarityBoosts.push({
+                    question: document.getElementById('clarity-question').textContent,
+                    response: response,
+                    createdAt: new Date().toISOString()
+                });
+                
+                localStorage.setItem('specturn_decisions', JSON.stringify(decisions));
+                hideClarityModal();
+                showToast('Clarity boost saved! 💡', 'success');
+                
+                if (currentView === 'journal') {
+                    renderDecisions();
+                }
+            }
+        }
+
+        function showSuccessAnimation() {
+            const overlay = document.getElementById('success-overlay');
+            overlay.classList.remove('hidden');
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 1500);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = {
+                'success': 'bg-green-500',
+                'error': 'bg-red-500',
+                'warning': 'bg-yellow-500',
+                'info': 'bg-blue-500'
+            }[type];
+            
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-xl shadow-lg animate-toast-in`;
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'toastIn 0.4s ease-out reverse';
+                setTimeout(() => {
+                    container.removeChild(toast);
+                }, 400);
+            }, 3000);
+        }
+
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+            if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+            
+            return date.toLocaleDateString();
+        }
+
+        // Make functions globally available
+        window.boostClarity = boostClarity;
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96cff6ed9205480b',t:'MTc1NDgzMzg1MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
