@@ -1,0 +1,3343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Specturn Priority Map - Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'urgent-important': '#d32f2f',
+                        'urgent-important-soft': '#ffebee',
+                        'important-not-urgent': '#388e3c',
+                        'important-not-urgent-soft': '#e8f5e8',
+                        'not-important-urgent': '#f57c00',
+                        'not-important-urgent-soft': '#fff3e0',
+                        'not-important-not-urgent': '#7b1fa2',
+                        'not-important-not-urgent-soft': '#f3e5f5',
+                        'bg-gradient-start': '#fafafa',
+                        'bg-gradient-end': '#e3f2fd'
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif']
+                    },
+                    animation: {
+                        'bounce-in': 'bounceIn 0.6s ease-out',
+                        'slide-in-left': 'slideInLeft 0.8s ease-out',
+                        'slide-in-right': 'slideInRight 0.8s ease-out',
+                        'slide-in-up': 'slideInUp 0.6s ease-out',
+                        'slide-in-down': 'slideInDown 0.5s ease-out',
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+                        'check-burst': 'checkBurst 0.8s ease-out',
+                        'float': 'float 3s ease-in-out infinite',
+                        'shimmer': 'shimmer 2s linear infinite',
+                        'gentle-bounce': 'gentleBounce 0.6s ease-out',
+                        'smooth-slide': 'smoothSlide 0.4s ease-in-out'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            /* Light Theme Variables */
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafafa;
+            --bg-gradient-start: #fafafa;
+            --bg-gradient-end: #e3f2fd;
+            --text-primary: #000000;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+            --border-color: rgba(255, 255, 255, 0.2);
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --quadrant-bg: rgba(255, 255, 255, 0.6);
+            --quadrant-hover-bg: rgba(255, 255, 255, 0.8);
+            --modal-bg: rgba(0, 0, 0, 0.5);
+            --card-bg: rgba(255, 255, 255, 0.6);
+            --card-hover-bg: rgba(255, 255, 255, 0.8);
+        }
+
+        .dark-theme {
+            /* Modern Dark Theme Variables */
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-gradient-start: #0f0f23;
+            --bg-gradient-end: #16213e;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.15);
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --quadrant-bg: rgba(30, 41, 59, 0.6);
+            --quadrant-hover-bg: rgba(30, 41, 59, 0.8);
+            --modal-bg: rgba(15, 15, 35, 0.9);
+            --card-bg: rgba(51, 65, 85, 0.8);
+            --card-hover-bg: rgba(71, 85, 105, 0.9);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .task-card {
+            transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(10px);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .task-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08);
+            background: var(--card-hover-bg);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .quadrant {
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--border-color);
+            background: var(--quadrant-bg);
+            color: var(--text-primary);
+            border-radius: 24px;
+        }
+
+        .quadrant:hover {
+            transform: scale(1.01);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+            background: var(--quadrant-hover-bg);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .drag-over {
+            transform: scale(1.05);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+            border: 3px dashed rgba(255, 255, 255, 0.8);
+        }
+
+        .floating-add-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 50;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border-radius: 16px;
+        }
+
+        .floating-add-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .floating-add-btn:active {
+            transform: translateY(0) scale(1.02);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .glass-effect {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+        }
+
+        .streak-badge {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            70% {
+                transform: scale(0.9);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInLeft {
+            0% {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInRight {
+            0% {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInUp {
+            0% {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulseGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+            }
+        }
+
+        @keyframes checkBurst {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s linear infinite;
+        }
+
+        @keyframes dragonFloat {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(-2deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(2deg);
+            }
+        }
+
+        @keyframes dragonWings {
+
+            0%,
+            100% {
+                transform: scaleY(1);
+            }
+
+            50% {
+                transform: scaleY(0.8);
+            }
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes gentleBounce {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.95);
+            }
+
+            60% {
+                opacity: 1;
+                transform: translateY(2px) scale(1.02);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes smoothSlide {
+            0% {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .dragon-float {
+            animation: dragonFloat 3s ease-in-out infinite;
+        }
+
+        .dragon-wings {
+            animation: dragonWings 0.8s ease-in-out infinite;
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .mobile-tab {
+            transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border-radius: 12px;
+        }
+
+        .mobile-tab.active {
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .mobile-tab:hover:not(.active) {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+
+        .suggestion-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            animation: slideInDown 0.6s ease-out;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .suggestion-bar.updating {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .dark-theme .suggestion-bar {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .task-complete-animation {
+            animation: checkBurst 0.8s ease-out;
+        }
+
+        .quadrant-title {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .dark-theme .quadrant-title {
+            background: rgba(26, 26, 26, 0.9);
+        }
+
+        /* Dark theme text color overrides */
+        .dark-theme .text-gray-800 {
+            color: #ffffff !important;
+        }
+
+        .dark-theme .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+
+        .dark-theme .text-gray-700 {
+            color: #e2e8f0 !important;
+        }
+
+        .dark-theme .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+
+        .dark-theme .text-gray-400 {
+            color: #64748b !important;
+        }
+
+        /* Enhanced task card styling for dark mode */
+        .dark-theme .task-card {
+            background: linear-gradient(135deg, rgba(51, 65, 85, 0.9), rgba(71, 85, 105, 0.7)) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .dark-theme .task-card:hover {
+            background: linear-gradient(135deg, rgba(71, 85, 105, 0.95), rgba(100, 116, 139, 0.8)) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .dark-theme .task-card .text-gray-800,
+        .dark-theme .task-card h4 {
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-theme .task-card .text-gray-600,
+        .dark-theme .task-card p {
+            color: #cbd5e1 !important;
+        }
+
+        .dark-theme .task-card .text-blue-500 {
+            color: #60a5fa !important;
+        }
+
+        .dark-theme .task-card .text-red-500 {
+            color: #f87171 !important;
+        }
+
+        .dark-theme .task-card .text-green-500 {
+            color: #4ade80 !important;
+        }
+
+        /* Dark mode quadrant styling */
+        .dark-theme [data-quadrant="urgent-important"] {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(127, 29, 29, 0.3)) !important;
+            border: 1px solid rgba(239, 68, 68, 0.2) !important;
+        }
+
+        .dark-theme [data-quadrant="important-not-urgent"] {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(20, 83, 45, 0.3)) !important;
+            border: 1px solid rgba(34, 197, 94, 0.2) !important;
+        }
+
+        .dark-theme [data-quadrant="not-important-urgent"] {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(146, 64, 14, 0.3)) !important;
+            border: 1px solid rgba(245, 158, 11, 0.2) !important;
+        }
+
+        .dark-theme [data-quadrant="not-important-not-urgent"] {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(88, 28, 135, 0.3)) !important;
+            border: 1px solid rgba(168, 85, 247, 0.2) !important;
+        }
+
+        /* Dark mode quadrant titles */
+        .dark-theme .quadrant-title {
+            background: rgba(30, 41, 59, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Dark mode glass effects */
+        .dark-theme .glass-effect {
+            background: rgba(30, 41, 59, 0.7) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(20px);
+        }
+
+        /* Dark mode modal improvements */
+        .dark-theme #taskModal,
+        .dark-theme #settingsModal,
+        .dark-theme #analyticsModal {
+            background: rgba(30, 41, 59, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        /* Dark mode input styling */
+        .dark-theme input,
+        .dark-theme textarea,
+        .dark-theme select {
+            background: rgba(51, 65, 85, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
+        }
+
+        .dark-theme input:focus,
+        .dark-theme textarea:focus,
+        .dark-theme select:focus {
+            border-color: #60a5fa !important;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important;
+        }
+
+        /* Dark mode button improvements */
+        .dark-theme button:not(.mobile-tab) {
+            background: rgba(51, 65, 85, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+        }
+
+        .dark-theme button:not(.mobile-tab):hover {
+            background: rgba(71, 85, 105, 0.9) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .dark-theme .text-gray-500 {
+            color: var(--text-muted) !important;
+        }
+
+        .dark-theme .border-gray-200 {
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .dark-theme .border-gray-300 {
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Dark mode date picker styling */
+        .dark-theme input[type="date"] {
+            background-color: #1e1e1e !important;
+            color: #eaeaea !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Analytics dark theme styles */
+        .dark-theme .analytics-card {
+            background: rgba(26, 26, 26, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .dark-theme .analytics-card h4 {
+            color: var(--text-primary) !important;
+        }
+
+        .dark-theme .bg-red-50 {
+            background-color: rgba(239, 68, 68, 0.1) !important;
+        }
+
+        .dark-theme .bg-green-50 {
+            background-color: rgba(34, 197, 94, 0.1) !important;
+        }
+
+        .dark-theme .bg-yellow-50 {
+            background-color: rgba(234, 179, 8, 0.1) !important;
+        }
+
+        .dark-theme .bg-purple-50 {
+            background-color: rgba(168, 85, 247, 0.1) !important;
+        }
+
+        .dark-theme .border-red-500 {
+            border-color: #ef4444 !important;
+        }
+
+        .dark-theme .border-green-500 {
+            border-color: #22c55e !important;
+        }
+
+        .dark-theme .border-yellow-500 {
+            border-color: #eab308 !important;
+        }
+
+        .dark-theme .border-purple-500 {
+            border-color: #a855f7 !important;
+        }
+
+        .dark-theme .text-red-700,
+        .dark-theme .text-green-700,
+        .dark-theme .text-yellow-700,
+        .dark-theme .text-purple-700 {
+            color: var(--text-primary) !important;
+        }
+
+        .dark-theme .text-red-600,
+        .dark-theme .text-green-600,
+        .dark-theme .text-yellow-600,
+        .dark-theme .text-purple-600 {
+            color: var(--text-secondary) !important;
+        }
+
+        .dark-theme .bg-gray-200 {
+            background-color: rgba(75, 85, 99, 0.3) !important;
+        }
+
+        .dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .dark-theme input[type="date"]::-webkit-datetime-edit {
+            color: #eaeaea !important;
+        }
+
+        .dark-theme input[type="date"]::-webkit-datetime-edit-text {
+            color: #eaeaea !important;
+        }
+
+        .dark-theme input[type="date"]::-webkit-datetime-edit-month-field {
+            color: #eaeaea !important;
+        }
+
+        .dark-theme input[type="date"]::-webkit-datetime-edit-day-field {
+            color: #eaeaea !important;
+        }
+
+        .dark-theme input[type="date"]::-webkit-datetime-edit-year-field {
+            color: #eaeaea !important;
+        }
+
+        /* Firefox date picker dark mode */
+        .dark-theme input[type="date"]::-moz-placeholder {
+            color: #eaeaea !important;
+        }
+
+        /* Performance-optimized loading screen animations */
+        @keyframes dragonFly {
+
+            0%,
+            100% {
+                transform: translateY(0px) translateX(0px);
+            }
+
+            25% {
+                transform: translateY(-8px) translateX(10px);
+            }
+
+            50% {
+                transform: translateY(-4px) translateX(20px);
+            }
+
+            75% {
+                transform: translateY(-12px) translateX(10px);
+            }
+        }
+
+        @keyframes wingFlap {
+
+            0%,
+            100% {
+                transform: scaleY(1) rotate(0deg);
+            }
+
+            25% {
+                transform: scaleY(0.8) rotate(-3deg);
+            }
+
+            50% {
+                transform: scaleY(0.6) rotate(-8deg);
+            }
+
+            75% {
+                transform: scaleY(0.8) rotate(-3deg);
+            }
+        }
+
+        @keyframes groundScroll {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-200px);
+            }
+        }
+
+        @keyframes cloudFloat {
+            0% {
+                transform: translateX(100vw);
+            }
+
+            100% {
+                transform: translateX(-200px);
+            }
+        }
+
+        @keyframes loadingFadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes loadingFadeOut {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.1);
+            }
+        }
+
+        .dragon-flying {
+            animation: dragonFly 3s ease-in-out infinite;
+        }
+
+        .dragon-wings {
+            animation: wingFlap 0.8s ease-in-out infinite;
+        }
+
+        .ground-scrolling {
+            animation: groundScroll 4s linear infinite;
+        }
+
+        .cloud-floating {
+            animation: cloudFloat 8s linear infinite;
+        }
+
+        .loading-fade-in {
+            animation: loadingFadeIn 0.3s ease-out forwards;
+        }
+
+        .loading-fade-out {
+            animation: loadingFadeOut 0.4s ease-in forwards;
+        }
+
+        /* Performance optimizations */
+        .loading-screen {
+            will-change: opacity, transform;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .loading-animation {
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+
+        /* Custom scrollbar styles */
+        .scrollbar-thin {
+            scrollbar-width: thin;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 3px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(156, 163, 175, 0.8);
+        }
+
+        /* Enhanced animation classes */
+        .task-enter {
+            animation: gentleBounce 0.6s ease-out;
+        }
+
+        .task-move {
+            animation: smoothSlide 0.4s ease-in-out;
+        }
+
+        .quadrant-highlight {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .quadrant-highlight:hover {
+            transform: scale(1.01);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Improved button animations */
+        .btn-primary {
+            transition: all 0.2s ease-in-out;
+            transform: translateZ(0);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Subtle focus states */
+        .focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        /* Task card improvements for fixed layout */
+        .task-card {
+            min-height: auto;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .quadrant {
+                min-height: 400px;
+            }
+
+            .floating-add-btn {
+                bottom: 1rem;
+                right: 1rem;
+            }
+
+            /* Mobile scrollable areas */
+            #urgent-important,
+            #important-not-urgent,
+            #not-important-urgent,
+            #not-important-not-urgent {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+
+<body class="font-poppins">
+    <!-- Firebase Config -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "demo-key",
+            authDomain: "demo-project.firebaseapp.com",
+            projectId: "demo-project",
+            storageBucket: "demo-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "demo-app-id"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const DEMO_MODE = true;
+    </script>
+
+    <!-- Performance-Optimized Loading Screen -->
+    <div id="loadingScreen" class="loading-screen fixed inset-0 z-50 overflow-hidden" style="display: none;">
+        <!-- Gradient Background -->
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800"></div>
+
+        <!-- Animated Clouds -->
+        <div class="absolute inset-0 overflow-hidden">
+            <!-- Large Cloud -->
+            <div class="cloud-floating absolute top-16 opacity-25" style="animation-duration: 12s;">
+                <svg width="120" height="50" viewBox="0 0 120 50" class="loading-animation">
+                    <ellipse cx="30" cy="30" rx="28" ry="18" fill="#ffffff" opacity="0.4" />
+                    <ellipse cx="60" cy="25" rx="35" ry="22" fill="#ffffff" opacity="0.4" />
+                    <ellipse cx="90" cy="30" rx="28" ry="18" fill="#ffffff" opacity="0.4" />
+                </svg>
+            </div>
+
+            <!-- Medium Cloud -->
+            <div class="cloud-floating absolute top-28 opacity-20"
+                style="animation-delay: -6s; animation-duration: 10s;">
+                <svg width="90" height="38" viewBox="0 0 90 38" class="loading-animation">
+                    <ellipse cx="22" cy="24" rx="22" ry="14" fill="#ffffff" opacity="0.3" />
+                    <ellipse cx="45" cy="20" rx="28" ry="16" fill="#ffffff" opacity="0.3" />
+                    <ellipse cx="68" cy="24" rx="22" ry="14" fill="#ffffff" opacity="0.3" />
+                </svg>
+            </div>
+
+            <!-- Small Cloud -->
+            <div class="cloud-floating absolute top-40 opacity-15"
+                style="animation-delay: -3s; animation-duration: 8s;">
+                <svg width="70" height="28" viewBox="0 0 70 28" class="loading-animation">
+                    <ellipse cx="18" cy="18" rx="18" ry="11" fill="#ffffff" opacity="0.3" />
+                    <ellipse cx="35" cy="15" rx="22" ry="13" fill="#ffffff" opacity="0.3" />
+                    <ellipse cx="52" cy="18" rx="18" ry="11" fill="#ffffff" opacity="0.3" />
+                </svg>
+            </div>
+
+            <!-- Wispy Cloud -->
+            <div class="cloud-floating absolute top-12 opacity-10"
+                style="animation-delay: -9s; animation-duration: 15s;">
+                <svg width="140" height="35" viewBox="0 0 140 35" class="loading-animation">
+                    <ellipse cx="25" cy="20" rx="25" ry="12" fill="#ffffff" opacity="0.2" />
+                    <ellipse cx="70" cy="18" rx="40" ry="15" fill="#ffffff" opacity="0.2" />
+                    <ellipse cx="115" cy="20" rx="25" ry="12" fill="#ffffff" opacity="0.2" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Enhanced Scrolling Ground -->
+        <div class="absolute bottom-0 left-0 w-full h-40 overflow-hidden">
+            <!-- Background Mountains -->
+            <div class="absolute bottom-0 w-full h-full">
+                <div class="ground-scrolling absolute bottom-0 flex" style="animation-duration: 8s;">
+                    <svg width="600" height="160" viewBox="0 0 600 160" class="loading-animation">
+                        <!-- Distant Mountains -->
+                        <path d="M0,160 L0,100 Q100,70 200,100 Q300,130 400,100 Q500,80 600,100 L600,160 Z"
+                            fill="url(#mountainGradient)" opacity="0.4" />
+                        <defs>
+                            <linearGradient id="mountainGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#6366F1;stop-opacity:0.6" />
+                                <stop offset="100%" style="stop-color:#312E81;stop-opacity:0.8" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <svg width="600" height="160" viewBox="0 0 600 160" class="loading-animation">
+                        <path d="M0,160 L0,100 Q100,70 200,100 Q300,130 400,100 Q500,80 600,100 L600,160 Z"
+                            fill="url(#mountainGradient)" opacity="0.4" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Foreground Hills -->
+            <div class="ground-scrolling absolute bottom-0 flex" style="animation-duration: 4s;">
+                <svg width="500" height="128" viewBox="0 0 500 128" class="loading-animation">
+                    <!-- Rolling Hills -->
+                    <path d="M0,128 L0,85 Q80,65 160,85 Q240,105 320,85 Q400,70 500,85 L500,128 Z"
+                        fill="url(#hillGradient)" opacity="0.7" />
+                    <!-- Hill Details -->
+                    <path d="M0,128 L0,95 Q60,80 120,95 Q180,110 240,95 Q300,85 360,95 Q420,105 500,95 L500,128 Z"
+                        fill="url(#hillGradient2)" opacity="0.5" />
+                    <defs>
+                        <linearGradient id="hillGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#1E1B4B;stop-opacity:0.9" />
+                        </linearGradient>
+                        <linearGradient id="hillGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:0.6" />
+                            <stop offset="100%" style="stop-color:#2D1B69;stop-opacity:0.8" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <svg width="500" height="128" viewBox="0 0 500 128" class="loading-animation">
+                    <path d="M0,128 L0,85 Q80,65 160,85 Q240,105 320,85 Q400,70 500,85 L500,128 Z"
+                        fill="url(#hillGradient)" opacity="0.7" />
+                    <path d="M0,128 L0,95 Q60,80 120,95 Q180,110 240,95 Q300,85 360,95 Q420,105 500,95 L500,128 Z"
+                        fill="url(#hillGradient2)" opacity="0.5" />
+                </svg>
+            </div>
+
+            <!-- Magical Sparkles on Ground -->
+            <div class="absolute bottom-8 left-0 w-full">
+                <div class="ground-scrolling flex space-x-20" style="animation-duration: 3s;">
+                    <div class="text-yellow-300 opacity-60 animate-pulse">✨</div>
+                    <div class="text-purple-300 opacity-60 animate-pulse" style="animation-delay: 0.5s;">⭐</div>
+                    <div class="text-pink-300 opacity-60 animate-pulse" style="animation-delay: 1s;">✨</div>
+                    <div class="text-blue-300 opacity-60 animate-pulse" style="animation-delay: 1.5s;">⭐</div>
+                    <div class="text-yellow-300 opacity-60 animate-pulse" style="animation-delay: 2s;">✨</div>
+                    <div class="text-purple-300 opacity-60 animate-pulse" style="animation-delay: 0.3s;">⭐</div>
+                    <div class="text-pink-300 opacity-60 animate-pulse" style="animation-delay: 0.8s;">✨</div>
+                    <div class="text-blue-300 opacity-60 animate-pulse" style="animation-delay: 1.3s;">⭐</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flying Dragon -->
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div class="dragon-flying loading-animation">
+                <!-- Slim, Agile Baby Dragon SVG -->
+                <svg width="180" height="100" viewBox="0 0 180 100" class="loading-animation">
+                    <!-- Dragon Body (slim and elongated) -->
+                    <ellipse cx="85" cy="60" rx="28" ry="12" fill="#8B5CF6" stroke="#7C3AED" stroke-width="1.5" />
+
+                    <!-- Dragon Neck (connecting body to head) -->
+                    <ellipse cx="105" cy="52" rx="12" ry="8" fill="#A855F7" stroke="#8B5CF6" stroke-width="1" />
+
+                    <!-- Dragon Head (side-facing, proportional) -->
+                    <ellipse cx="125" cy="45" rx="16" ry="12" fill="#A855F7" stroke="#8B5CF6" stroke-width="1.5" />
+
+                    <!-- Dragon Snout (sleek and pointed) -->
+                    <ellipse cx="138" cy="45" rx="10" ry="6" fill="#C084FC" stroke="#A855F7" stroke-width="1" />
+
+                    <!-- Dragon Eye (slightly large for cuteness) -->
+                    <circle cx="130" cy="40" r="5" fill="#FEF3C7" stroke="#F59E0B" stroke-width="0.5" />
+                    <circle cx="132" cy="39" r="2.5" fill="#1F2937" />
+                    <circle cx="133" cy="38" r="1" fill="#FFFFFF" />
+
+                    <!-- Dragon Nostril -->
+                    <ellipse cx="142" cy="45" rx="1" ry="1.5" fill="#7C3AED" />
+
+                    <!-- Dragon Wings (small and delicate) -->
+                    <g class="dragon-wings loading-animation">
+                        <!-- Main Wing -->
+                        <path d="M70 45 Q45 25 35 40 Q40 55 65 52 Q75 48 70 45 Z" fill="#EC4899" stroke="#DB2777"
+                            stroke-width="1.5" opacity="0.9" />
+                        <!-- Wing Detail -->
+                        <path d="M65 48 Q50 35 45 42 Q48 50 65 48 Z" fill="#F472B6" stroke="#EC4899" stroke-width="1"
+                            opacity="0.7" />
+                        <!-- Secondary Wing -->
+                        <path d="M75 65 Q50 70 45 80 Q50 85 70 78 Q78 70 75 65 Z" fill="#F472B6" stroke="#EC4899"
+                            stroke-width="1.5" opacity="0.8" />
+                    </g>
+
+                    <!-- Dragon Tail (long and elegant) -->
+                    <path d="M57 60 Q35 65 25 75 Q20 80 25 85 Q35 82 45 78 Q55 70 57 62" fill="#8B5CF6" stroke="#7C3AED"
+                        stroke-width="1.5" />
+                    <path d="M30 78 Q25 75 22 80 Q25 85 30 82" fill="#A855F7" stroke="#8B5CF6" stroke-width="1" />
+
+                    <!-- Dragon Legs (small and delicate) -->
+                    <ellipse cx="75" cy="70" rx="3" ry="8" fill="#A855F7" stroke="#8B5CF6" stroke-width="1" />
+                    <ellipse cx="95" cy="70" rx="3" ry="8" fill="#A855F7" stroke="#8B5CF6" stroke-width="1" />
+
+                    <!-- Small claws -->
+                    <circle cx="75" cy="78" r="1.5" fill="#7C3AED" />
+                    <circle cx="95" cy="78" r="1.5" fill="#7C3AED" />
+
+                    <!-- Dragon Spikes (small and neat) -->
+                    <polygon points="90,35 89,40 91,40" fill="#F59E0B" stroke="#D97706" stroke-width="0.5" />
+                    <polygon points="100,37 99,42 101,42" fill="#F59E0B" stroke="#D97706" stroke-width="0.5" />
+                    <polygon points="110,39 109,44 111,44" fill="#F59E0B" stroke="#D97706" stroke-width="0.5" />
+
+                    <!-- Belly detail (subtle, not prominent) -->
+                    <ellipse cx="85" cy="65" rx="20" ry="6" fill="#9333EA" opacity="0.3" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Loading Text -->
+        <div class="absolute bottom-24 left-0 right-0 text-center">
+            <p class="text-xl text-white font-medium mb-4 loading-animation">Getting things ready for you...</p>
+            <div class="flex justify-center items-center space-x-2">
+                <div class="w-2 h-2 bg-white rounded-full animate-bounce loading-animation"
+                    style="animation-delay: 0s;"></div>
+                <div class="w-2 h-2 bg-white rounded-full animate-bounce loading-animation"
+                    style="animation-delay: 0.2s;"></div>
+                <div class="w-2 h-2 bg-white rounded-full animate-bounce loading-animation"
+                    style="animation-delay: 0.4s;"></div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Top Navigation -->
+        <nav class="glass-effect shadow-lg border-b border-white border-opacity-20 px-6 py-4 sticky top-0 z-40">
+            <div class="flex items-center justify-between max-w-7xl mx-auto">
+                <div class="flex items-center space-x-4">
+                    <div class="text-3xl animate-float">🎯</div>
+                    <h1
+                        class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        Specturn Priority Map
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <div id="streakBadge"
+                        class="hidden streak-badge px-4 py-2 rounded-full text-gray-800 font-bold text-sm">
+                        🔥 <span id="streakCount">0</span> Day Streak!
+                    </div>
+                    <div class="glass-effect px-4 py-2 rounded-full">
+                        <span class="text-sm font-medium">Today: </span>
+                        <span id="completedToday" class="font-bold text-green-600">0</span>
+                        <span class="text-sm"> completed</span>
+                    </div>
+                    <div id="userInfo" class="hidden glass-effect px-4 py-2 rounded-full flex items-center space-x-2">
+                        <img id="userAvatar" class="w-6 h-6 rounded-full" style="display: none;">
+                        <span id="userDisplayName" class="text-sm font-medium"></span>
+                    </div>
+                    <button id="settingsBtn"
+                        class="glass-effect px-4 py-2 rounded-full hover:bg-white hover:bg-opacity-30 transition-all font-medium cursor-pointer"
+                        title="Settings">
+                        ⚙️
+                    </button>
+                    <button id="logoutBtn"
+                        class="glass-effect px-6 py-2 rounded-full hover:bg-white hover:bg-opacity-30 transition-all font-medium cursor-pointer">
+                        Log Out
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Daily Suggestions Bar -->
+        <div id="suggestionBar" class="suggestion-bar text-white px-6 py-4 text-center">
+            <div class="max-w-4xl mx-auto">
+                <p id="dailySuggestion" class="text-lg font-medium">🌟 Welcome back! Ready to tackle your priorities?
+                </p>
+            </div>
+        </div>
+
+        <!-- Mobile Quadrant Tabs -->
+        <div id="mobileTabs" class="md:hidden flex overflow-x-auto px-4 py-3 space-x-2 glass-effect">
+            <button class="mobile-tab flex-shrink-0 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap"
+                style="background-color: #d32f2f; color: white;">
+                🔥 Do Now
+            </button>
+            <button class="mobile-tab flex-shrink-0 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap"
+                style="background-color: #388e3c; color: white;">
+                📅 Schedule
+            </button>
+            <button class="mobile-tab flex-shrink-0 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap"
+                style="background-color: #f57c00; color: white;">
+                ⚡ Delegate
+            </button>
+            <button class="mobile-tab flex-shrink-0 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap"
+                style="background-color: #7b1fa2; color: white;">
+                🗑️ Eliminate
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="p-6 max-w-7xl mx-auto">
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-20 hidden">
+                <div class="text-8xl mb-6 animate-bounce">🚀</div>
+                <h3 class="text-3xl font-bold text-gray-700 mb-4">Ready to boost your productivity?</h3>
+                <p class="text-xl text-gray-600 mb-8">Create your first task and watch the magic happen!</p>
+                <button id="createFirstTaskBtn"
+                    class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-2xl hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg text-lg font-semibold cursor-pointer">
+                    ✨ Create First Task
+                </button>
+            </div>
+
+            <!-- Matrix Grid -->
+            <div id="matrixGrid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Do Now (Urgent + Important) -->
+                <div class="quadrant rounded-3xl p-6 animate-slide-in-left"
+                    style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.08), rgba(255, 235, 238, 0.4));"
+                    data-quadrant="urgent-important">
+                    <div class="quadrant-title rounded-2xl p-4 mb-6 text-center">
+                        <div class="text-4xl mb-2">🔥</div>
+                        <h3 class="font-bold text-xl text-urgent-important">Do Now</h3>
+                        <p class="text-sm text-gray-600 mt-1">Urgent & Important</p>
+                    </div>
+                    <div id="urgent-important"
+                        class="space-y-3 h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                    </div>
+                </div>
+
+                <!-- Schedule It (Important, Not Urgent) -->
+                <div class="quadrant rounded-3xl p-6 animate-slide-in-right"
+                    style="background: linear-gradient(135deg, rgba(56, 142, 60, 0.08), rgba(232, 245, 232, 0.4));"
+                    data-quadrant="important-not-urgent">
+                    <div class="quadrant-title rounded-2xl p-4 mb-6 text-center">
+                        <div class="text-4xl mb-2">📅</div>
+                        <h3 class="font-bold text-xl text-important-not-urgent">Schedule It</h3>
+                        <p class="text-sm text-gray-600 mt-1">Important, Not Urgent</p>
+                    </div>
+                    <div id="important-not-urgent"
+                        class="space-y-3 h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                    </div>
+                </div>
+
+                <!-- Delegate (Not Important, Urgent) -->
+                <div class="quadrant rounded-3xl p-6 animate-slide-in-left"
+                    style="background: linear-gradient(135deg, rgba(245, 124, 0, 0.08), rgba(255, 243, 224, 0.4));"
+                    data-quadrant="not-important-urgent">
+                    <div class="quadrant-title rounded-2xl p-4 mb-6 text-center">
+                        <div class="text-4xl mb-2">⚡</div>
+                        <h3 class="font-bold text-xl text-not-important-urgent">Delegate</h3>
+                        <p class="text-sm text-gray-600 mt-1">Urgent, Not Important</p>
+                    </div>
+                    <div id="not-important-urgent"
+                        class="space-y-3 h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                    </div>
+                </div>
+
+                <!-- Eliminate (Not Important, Not Urgent) -->
+                <div class="quadrant rounded-3xl p-6 animate-slide-in-right"
+                    style="background: linear-gradient(135deg, rgba(123, 31, 162, 0.08), rgba(243, 229, 245, 0.4));"
+                    data-quadrant="not-important-not-urgent">
+                    <div class="quadrant-title rounded-2xl p-4 mb-6 text-center">
+                        <div class="text-4xl mb-2">🗑️</div>
+                        <h3 class="font-bold text-xl text-not-important-not-urgent">Eliminate</h3>
+                        <p class="text-sm text-gray-600 mt-1">Not Important, Not Urgent</p>
+                    </div>
+                    <div id="not-important-not-urgent"
+                        class="space-y-3 h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Add Button -->
+        <button id="floatingAddBtn"
+            class="floating-add-btn bg-gradient-to-r from-purple-600 to-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold hover:from-purple-700 hover:to-blue-700 cursor-pointer">
+            +
+        </button>
+
+        <!-- Footer -->
+        <footer class="glass-effect border-t border-white border-opacity-20 py-6 mt-12">
+            <div class="max-w-7xl mx-auto px-6 text-center">
+                <p class="text-gray-600 font-medium">✨ Crafted with intention by Specturn</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="glass-effect rounded-3xl shadow-2xl w-full max-w-md animate-bounce-in">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h3
+                        class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        ⚙️ Settings</h3>
+                    <button id="closeSettingsBtn"
+                        class="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer">×</button>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Theme Toggle -->
+                    <div class="flex items-center justify-between p-4 glass-effect rounded-2xl">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🌙</span>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Dark Mode</h4>
+                                <p class="text-sm text-gray-600">Switch between light and dark themes</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="darkModeToggle" class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600">
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Additional Settings Placeholder -->
+                    <!-- Analytics Button -->
+                    <button id="viewAnalyticsBtn"
+                        class="w-full flex items-center justify-between p-4 glass-effect rounded-2xl hover:bg-white hover:bg-opacity-30 transition-all cursor-pointer">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">📊</span>
+                            <div class="text-left">
+                                <h4 class="font-semibold text-gray-800">View Analytics</h4>
+                                <p class="text-sm text-gray-600">See your productivity insights</p>
+                            </div>
+                        </div>
+                        <span class="text-gray-400">→</span>
+                    </button>
+
+                    <div class="flex items-center justify-between p-4 glass-effect rounded-2xl opacity-50">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🔔</span>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Notifications</h4>
+                                <p class="text-sm text-gray-600">Coming soon...</p>
+                            </div>
+                        </div>
+                        <div class="w-11 h-6 bg-gray-200 rounded-full"></div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <button id="closeSettingsFooterBtn"
+                        class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-2xl hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg font-semibold cursor-pointer">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Modal -->
+    <div id="analyticsModal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+            class="glass-effect rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-bounce-in">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h3
+                        class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        📊 Analytics Dashboard</h3>
+                    <button id="closeAnalyticsBtn"
+                        class="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer">×</button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="analyticsLoading" class="text-center py-12">
+                    <div class="loading-spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600">Loading your analytics...</p>
+                </div>
+
+                <!-- Analytics Content -->
+                <div id="analyticsContent" class="hidden space-y-8">
+                    <!-- Overview Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="glass-effect rounded-2xl p-6 text-center">
+                            <div class="text-3xl mb-2">📝</div>
+                            <div class="text-2xl font-bold text-purple-600" id="totalTasksCount">0</div>
+                            <div class="text-sm text-gray-600">Total Tasks Created</div>
+                        </div>
+                        <div class="glass-effect rounded-2xl p-6 text-center">
+                            <div class="text-3xl mb-2">✅</div>
+                            <div class="text-2xl font-bold text-green-600" id="completedTasksCount">0</div>
+                            <div class="text-sm text-gray-600">Tasks Completed</div>
+                        </div>
+                        <div class="glass-effect rounded-2xl p-6 text-center">
+                            <div class="text-3xl mb-2">🎯</div>
+                            <div class="text-2xl font-bold text-blue-600" id="completionRate">0%</div>
+                            <div class="text-sm text-gray-600">Completion Rate</div>
+                        </div>
+                    </div>
+
+                    <!-- Completion Progress Bar -->
+                    <div class="glass-effect rounded-2xl p-6">
+                        <h4 class="text-lg font-semibold mb-4 text-gray-800">Overall Progress</h4>
+                        <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                            <div id="progressBar"
+                                class="bg-gradient-to-r from-purple-600 to-blue-600 h-4 rounded-full transition-all duration-1000"
+                                style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span id="progressText">0 of 0 tasks completed</span>
+                            <span id="progressPercentage">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Matrix Breakdown -->
+                    <div class="glass-effect rounded-2xl p-6">
+                        <h4 class="text-lg font-semibold mb-6 text-gray-800">Eisenhower Matrix Breakdown</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-red-700 font-semibold">🔥 Do Now</div>
+                                        <div class="text-sm text-red-600">Urgent & Important</div>
+                                    </div>
+                                    <div class="text-2xl font-bold text-red-600" id="urgentImportantCount">0</div>
+                                </div>
+                            </div>
+                            <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-green-700 font-semibold">📅 Schedule</div>
+                                        <div class="text-sm text-green-600">Important, Not Urgent</div>
+                                    </div>
+                                    <div class="text-2xl font-bold text-green-600" id="importantNotUrgentCount">0</div>
+                                </div>
+                            </div>
+                            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-yellow-700 font-semibold">⚡ Delegate</div>
+                                        <div class="text-sm text-yellow-600">Urgent, Not Important</div>
+                                    </div>
+                                    <div class="text-2xl font-bold text-yellow-600" id="urgentNotImportantCount">0</div>
+                                </div>
+                            </div>
+                            <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-purple-700 font-semibold">🗑️ Eliminate</div>
+                                        <div class="text-sm text-purple-600">Not Important, Not Urgent</div>
+                                    </div>
+                                    <div class="text-2xl font-bold text-purple-600" id="notImportantNotUrgentCount">0
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Activity Chart -->
+                    <div class="glass-effect rounded-2xl p-6">
+                        <h4 class="text-lg font-semibold mb-6 text-gray-800">Weekly Activity</h4>
+                        <div class="space-y-3" id="weeklyChart">
+                            <!-- Chart will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Streak & Habits -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-effect rounded-2xl p-6">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">🔥 Current Streak</h4>
+                            <div class="text-center">
+                                <div class="text-4xl font-bold text-orange-500 mb-2" id="currentStreak">0</div>
+                                <div class="text-sm text-gray-600">Days in a row</div>
+                            </div>
+                        </div>
+                        <div class="glass-effect rounded-2xl p-6">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">📈 This Week</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Tasks Completed:</span>
+                                    <span class="font-semibold" id="weeklyCompleted">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Daily Average:</span>
+                                    <span class="font-semibold" id="dailyAverage">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Most Productive Day:</span>
+                                    <span class="font-semibold" id="bestDay">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="glass-effect rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-bounce-in">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 id="modalTitle"
+                        class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        ✨ Create New Task</h3>
+                    <button id="closeModalBtn"
+                        class="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer">×</button>
+                </div>
+
+                <form id="taskForm" onsubmit="saveTask(event)" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">🎯 Task Title *</label>
+                        <input type="text" id="taskTitle" required
+                            class="w-full px-6 py-4 glass-effect rounded-2xl focus:ring-4 focus:ring-purple-300 focus:outline-none transition-all text-gray-700"
+                            placeholder="What needs to be done?">
+                        <div id="titleError" class="text-red-500 text-sm mt-2 hidden">Task title is required</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">📝 Task Details</label>
+                        <textarea id="taskDetails" rows="3"
+                            class="w-full px-6 py-4 glass-effect rounded-2xl focus:ring-4 focus:ring-purple-300 focus:outline-none transition-all text-gray-700 resize-none"
+                            placeholder="Add more details (optional)..."></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">⚡ Urgency *</label>
+                            <select id="taskUrgency" required
+                                class="w-full px-6 py-4 glass-effect rounded-2xl focus:ring-4 focus:ring-purple-300 focus:outline-none transition-all text-gray-700">
+                                <option value="">Select urgency</option>
+                                <option value="urgent">🔥 Urgent</option>
+                                <option value="not-urgent">⏰ Not Urgent</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">⭐ Importance *</label>
+                            <select id="taskImportance" required
+                                class="w-full px-6 py-4 glass-effect rounded-2xl focus:ring-4 focus:ring-purple-300 focus:outline-none transition-all text-gray-700">
+                                <option value="">Select importance</option>
+                                <option value="important">💎 Important</option>
+                                <option value="not-important">💭 Not Important</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">📅 Deadline (Optional)</label>
+                        <input type="date" id="taskDeadline"
+                            class="w-full px-6 py-4 glass-effect rounded-2xl focus:ring-4 focus:ring-purple-300 focus:outline-none transition-all text-gray-700">
+                    </div>
+
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" id="cancelTaskBtn"
+                            class="flex-1 px-6 py-4 glass-effect rounded-2xl hover:bg-white hover:bg-opacity-30 transition-all font-semibold cursor-pointer">
+                            Cancel
+                        </button>
+                        <button type="submit" id="saveTaskBtn"
+                            class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 rounded-2xl hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg font-semibold cursor-pointer">
+                            ✨ Save Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let tasks = [];
+        let currentEditingTask = null;
+        let currentMobileQuadrant = 'urgent-important';
+        let userStreak = 0;
+        let tasksListener = null;
+        let isInitialized = false;
+        let loadingState = {
+            isLoading: false,
+            loadingReasons: new Set(),
+            element: null
+        };
+
+        // Theme Management Functions
+        function initializeTheme() {
+            console.log('Initializing theme...');
+            const savedTheme = localStorage.getItem('specturnTheme');
+            const isDarkMode = savedTheme === 'dark';
+
+            if (isDarkMode) {
+                document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.remove('dark-theme');
+            }
+
+            // Update toggle state
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            if (darkModeToggle) {
+                darkModeToggle.checked = isDarkMode;
+            }
+
+            console.log(`Theme initialized: ${isDarkMode ? 'dark' : 'light'}`);
+        }
+
+        function toggleTheme(isDarkMode) {
+            console.log(`Toggling theme to: ${isDarkMode ? 'dark' : 'light'}`);
+
+            if (isDarkMode) {
+                document.body.classList.add('dark-theme');
+                localStorage.setItem('specturnTheme', 'dark');
+                showToast('🌙 Dark mode enabled', 'success');
+            } else {
+                document.body.classList.remove('dark-theme');
+                localStorage.setItem('specturnTheme', 'light');
+                showToast('☀️ Light mode enabled', 'success');
+            }
+        }
+
+        function openSettingsModal() {
+            console.log('Opening settings modal');
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+
+                // Update toggle state
+                const darkModeToggle = document.getElementById('darkModeToggle');
+                if (darkModeToggle) {
+                    const isDarkMode = document.body.classList.contains('dark-theme');
+                    darkModeToggle.checked = isDarkMode;
+                }
+            }
+        }
+
+        function closeSettingsModal() {
+            console.log('Closing settings modal');
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Performance-optimized loading screen management
+        function showLoadingScreen(reason = 'general') {
+            if (!loadingState.element) {
+                loadingState.element = document.getElementById('loadingScreen');
+            }
+
+            if (!loadingState.element) {
+                console.warn('Loading screen element not found');
+                return;
+            }
+
+            // Add reason to loading reasons
+            loadingState.loadingReasons.add(reason);
+
+            // Only show if not already visible
+            if (!loadingState.isLoading) {
+                console.log(`Showing loading screen for: ${reason}`);
+                loadingState.isLoading = true;
+
+                // Show with fade-in animation
+                loadingState.element.style.display = 'block';
+                loadingState.element.classList.remove('loading-fade-out');
+                loadingState.element.classList.add('loading-fade-in');
+
+                // Force reflow for smooth animation
+                loadingState.element.offsetHeight;
+            } else {
+                console.log(`Loading screen already visible, added reason: ${reason}`);
+            }
+        }
+
+        function hideLoadingScreen(reason = 'general') {
+            if (!loadingState.element) {
+                loadingState.element = document.getElementById('loadingScreen');
+            }
+
+            if (!loadingState.element) {
+                console.warn('Loading screen element not found');
+                return;
+            }
+
+            // Remove reason from loading reasons
+            loadingState.loadingReasons.delete(reason);
+
+            // Only hide if no more loading reasons
+            if (loadingState.loadingReasons.size === 0 && loadingState.isLoading) {
+                console.log(`Hiding loading screen, reason completed: ${reason}`);
+                loadingState.isLoading = false;
+
+                // Hide with fade-out animation
+                loadingState.element.classList.remove('loading-fade-in');
+                loadingState.element.classList.add('loading-fade-out');
+
+                // Hide element after animation completes
+                setTimeout(() => {
+                    if (!loadingState.isLoading) {
+                        loadingState.element.style.display = 'none';
+                        loadingState.element.classList.remove('loading-fade-out');
+                    }
+                }, 400); // Match animation duration
+            } else if (loadingState.loadingReasons.size > 0) {
+                console.log(`Loading screen still needed for: ${Array.from(loadingState.loadingReasons).join(', ')}`);
+            }
+        }
+
+        function forceHideLoadingScreen() {
+            console.log('Force hiding loading screen');
+            loadingState.loadingReasons.clear();
+            loadingState.isLoading = false;
+
+            if (loadingState.element) {
+                loadingState.element.style.display = 'none';
+                loadingState.element.classList.remove('loading-fade-in', 'loading-fade-out');
+            }
+        }
+
+        // Initialize app with proper DOM ready handling
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM Content Loaded - Initializing app...');
+
+            // Initialize theme first
+            initializeTheme();
+
+            // Initialize all event listeners first
+            initializeEventListeners();
+
+            // Start initialization process
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            try {
+                console.log('Starting app initialization...');
+
+                // Show loading screen for initialization
+                showLoadingScreen('app-init');
+
+                // Create default user for immediate access
+                currentUser = {
+                    uid: 'default_user',
+                    email: 'user@specturn.com',
+                    displayName: 'User',
+                    provider: 'local'
+                };
+
+                // Update daily suggestion (quick, no loading needed)
+                updateDailySuggestion();
+
+                // Mark as initialized
+                isInitialized = true;
+                console.log('App initialization complete');
+
+                // Hide initialization loading
+                hideLoadingScreen('app-init');
+
+                // Show main app immediately
+                showMainApp();
+
+            } catch (error) {
+                console.error('App initialization error:', error);
+
+                // Force hide loading screen on error
+                forceHideLoadingScreen();
+                isInitialized = true;
+
+                // Show main app as fallback
+                setTimeout(() => {
+                    showMainApp();
+                }, 100);
+            }
+        }
+
+        // Initialize all event listeners with proper error handling
+        function initializeEventListeners() {
+            console.log('Initializing event listeners...');
+
+            try {
+                // Task form submission
+                const taskForm = document.getElementById('taskForm');
+                if (taskForm) {
+                    taskForm.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        console.log('Task form submitted');
+                        saveTask(e);
+                    });
+                    console.log('✓ Task form listener attached');
+                } else {
+                    console.warn('Task form not found');
+                }
+
+                // Logout button
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Logout button clicked');
+                        logout();
+                    });
+                    console.log('✓ Logout button listener attached');
+                } else {
+                    console.warn('Logout button not found');
+                }
+
+                // Modal close button
+                const closeModalBtn = document.getElementById('closeModalBtn');
+                if (closeModalBtn) {
+                    closeModalBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Modal close button clicked');
+                        closeTaskModal();
+                    });
+                    console.log('✓ Modal close button listener attached');
+                } else {
+                    console.warn('Modal close button not found');
+                }
+
+                // Cancel task button
+                const cancelTaskBtn = document.getElementById('cancelTaskBtn');
+                if (cancelTaskBtn) {
+                    cancelTaskBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Cancel task button clicked');
+                        closeTaskModal();
+                    });
+                    console.log('✓ Cancel task button listener attached');
+                } else {
+                    console.warn('Cancel task button not found');
+                }
+
+                // Floating add button
+                const floatingAddBtn = document.getElementById('floatingAddBtn');
+                if (floatingAddBtn) {
+                    floatingAddBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Floating add button clicked');
+                        openTaskModal();
+                    });
+                    console.log('✓ Floating add button listener attached');
+                } else {
+                    console.warn('Floating add button not found');
+                }
+
+                // Create first task button
+                const createFirstTaskBtn = document.getElementById('createFirstTaskBtn');
+                if (createFirstTaskBtn) {
+                    createFirstTaskBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Create first task button clicked');
+                        openTaskModal();
+                    });
+                    console.log('✓ Create first task button listener attached');
+                } else {
+                    console.warn('Create first task button not found');
+                }
+
+
+
+                // Settings button
+                const settingsBtn = document.getElementById('settingsBtn');
+                if (settingsBtn) {
+                    settingsBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Settings button clicked');
+                        openSettingsModal();
+                    });
+                    console.log('✓ Settings button listener attached');
+                } else {
+                    console.warn('Settings button not found');
+                }
+
+                // Settings modal close buttons
+                const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+                if (closeSettingsBtn) {
+                    closeSettingsBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Close settings button clicked');
+                        closeSettingsModal();
+                    });
+                    console.log('✓ Close settings button listener attached');
+                } else {
+                    console.warn('Close settings button not found');
+                }
+
+                const closeSettingsFooterBtn = document.getElementById('closeSettingsFooterBtn');
+                if (closeSettingsFooterBtn) {
+                    closeSettingsFooterBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Close settings footer button clicked');
+                        closeSettingsModal();
+                    });
+                    console.log('✓ Close settings footer button listener attached');
+                } else {
+                    console.warn('Close settings footer button not found');
+                }
+
+                // Dark mode toggle
+                const darkModeToggle = document.getElementById('darkModeToggle');
+                if (darkModeToggle) {
+                    darkModeToggle.addEventListener('change', function (e) {
+                        console.log('Dark mode toggle changed:', e.target.checked);
+                        toggleTheme(e.target.checked);
+                    });
+                    console.log('✓ Dark mode toggle listener attached');
+                } else {
+                    console.warn('Dark mode toggle not found');
+                }
+
+                // Analytics button
+                const viewAnalyticsBtn = document.getElementById('viewAnalyticsBtn');
+                if (viewAnalyticsBtn) {
+                    viewAnalyticsBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('View analytics button clicked');
+                        openAnalyticsModal();
+                    });
+                    console.log('✓ View analytics button listener attached');
+                } else {
+                    console.warn('View analytics button not found');
+                }
+
+                // Analytics modal close button
+                const closeAnalyticsBtn = document.getElementById('closeAnalyticsBtn');
+                if (closeAnalyticsBtn) {
+                    closeAnalyticsBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        console.log('Close analytics button clicked');
+                        closeAnalyticsModal();
+                    });
+                    console.log('✓ Close analytics button listener attached');
+                } else {
+                    console.warn('Close analytics button not found');
+                }
+
+                // Mobile tab buttons
+                const mobileTabs = document.querySelectorAll('.mobile-tab');
+                if (mobileTabs.length > 0) {
+                    mobileTabs.forEach((tab, index) => {
+                        const quadrants = ['urgent-important', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+                        const quadrant = quadrants[index];
+
+                        tab.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            console.log(`Mobile tab clicked: ${quadrant}`);
+                            showMobileQuadrant(quadrant, this);
+                        });
+                    });
+                    console.log(`✓ ${mobileTabs.length} mobile tab listeners attached`);
+                } else {
+                    console.warn('Mobile tabs not found');
+                }
+
+                // Drag and drop event listeners
+                const quadrants = document.querySelectorAll('.quadrant');
+                if (quadrants.length > 0) {
+                    quadrants.forEach(quadrant => {
+                        quadrant.addEventListener('dragover', function (e) {
+                            e.preventDefault();
+                            this.classList.add('drag-over');
+                        });
+
+                        quadrant.addEventListener('dragleave', function (e) {
+                            if (!this.contains(e.relatedTarget)) {
+                                this.classList.remove('drag-over');
+                            }
+                        });
+
+                        quadrant.addEventListener('drop', function (e) {
+                            e.preventDefault();
+                            this.classList.remove('drag-over');
+                            const quadrantType = this.getAttribute('data-quadrant');
+                            const taskId = e.dataTransfer.getData("text");
+                            console.log(`Task ${taskId} dropped on ${quadrantType}`);
+                            handleTaskDrop(taskId, quadrantType);
+                        });
+                    });
+                    console.log(`✓ ${quadrants.length} quadrant drag/drop listeners attached`);
+                } else {
+                    console.warn('Quadrants not found');
+                }
+
+                // Window resize handler
+                window.addEventListener('resize', updateMobileView);
+                console.log('✓ Window resize listener attached');
+
+                console.log('✅ All event listeners initialized successfully');
+
+            } catch (error) {
+                console.error('❌ Error initializing event listeners:', error);
+                showToast('Some buttons may not work properly. Please refresh the page.', 'error');
+            }
+        }
+
+
+
+
+
+
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-6 right-6 px-6 py-4 rounded-2xl shadow-lg z-50 animate-bounce-in ${type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                    'bg-blue-500 text-white'
+                }`;
+            toast.textContent = message;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+
+
+        function showMainApp() {
+            document.getElementById('mainApp').classList.remove('hidden');
+
+            // Update user display
+            if (currentUser) {
+                if (currentUser.displayName) {
+                    document.getElementById('userDisplayName').textContent = currentUser.displayName;
+                    document.getElementById('userInfo').classList.remove('hidden');
+                }
+
+                if (currentUser.photoURL) {
+                    document.getElementById('userAvatar').src = currentUser.photoURL;
+                    document.getElementById('userAvatar').style.display = 'block';
+                }
+            }
+
+            loadTasks();
+            updateStreak();
+            showMobileQuadrant('urgent-important');
+        }
+
+        function logout() {
+            console.log('Logout function called');
+
+            // Show confirmation dialog
+            if (!confirm('Are you sure you want to logout?')) {
+                console.log('Logout cancelled by user');
+                return;
+            }
+
+            console.log('User confirmed logout, proceeding...');
+
+            try {
+                // Get logout button and disable it
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.disabled = true;
+                    logoutBtn.textContent = 'Logging out...';
+                    console.log('Logout button disabled');
+                }
+
+                // Store current user for cleanup
+                const userToCleanup = currentUser;
+                console.log('Current user to cleanup:', userToCleanup);
+
+                // Clear global variables immediately
+                currentUser = null;
+                tasks = [];
+                userStreak = 0;
+                console.log('Global variables cleared');
+
+                // Clear localStorage
+                try {
+                    const keysToRemove = [
+                        'specturnUser',
+                        'specturnRememberMe',
+                        'pendingAuthProvider'
+                    ];
+
+                    if (userToCleanup && userToCleanup.uid) {
+                        keysToRemove.push(
+                            `specturnTasks_${userToCleanup.uid}`,
+                            `specturnStreak_${userToCleanup.uid}`,
+                            `specturnLastActive_${userToCleanup.uid}`
+                        );
+                    }
+
+                    keysToRemove.forEach(key => {
+                        localStorage.removeItem(key);
+                        console.log(`Removed localStorage key: ${key}`);
+                    });
+
+                } catch (storageError) {
+                    console.error('Error clearing localStorage:', storageError);
+                }
+
+                // Clean up Firestore listeners
+                if (tasksListener) {
+                    try {
+                        tasksListener();
+                        tasksListener = null;
+                        console.log('Firestore listener cleaned up');
+                    } catch (listenerError) {
+                        console.error('Error cleaning up Firestore listener:', listenerError);
+                    }
+                }
+
+                // Reset UI elements
+                try {
+                    // Hide user info
+                    const userInfo = document.getElementById('userInfo');
+                    if (userInfo) userInfo.classList.add('hidden');
+
+                    const userDisplayName = document.getElementById('userDisplayName');
+                    if (userDisplayName) userDisplayName.textContent = '';
+
+                    const userAvatar = document.getElementById('userAvatar');
+                    if (userAvatar) {
+                        userAvatar.style.display = 'none';
+                        userAvatar.src = '';
+                    }
+
+                    // Hide streak badge
+                    const streakBadge = document.getElementById('streakBadge');
+                    if (streakBadge) streakBadge.classList.add('hidden');
+
+                    // Reset completed today counter
+                    const completedToday = document.getElementById('completedToday');
+                    if (completedToday) completedToday.textContent = '0';
+
+                    // Clear all quadrants
+                    const quadrantIds = ['urgent-important', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+                    quadrantIds.forEach(quadrantId => {
+                        const container = document.getElementById(quadrantId);
+                        if (container) {
+                            container.innerHTML = '';
+                            console.log(`Cleared quadrant: ${quadrantId}`);
+                        }
+                    });
+
+                    // Reset daily suggestion
+                    const dailySuggestion = document.getElementById('dailySuggestion');
+                    if (dailySuggestion) {
+                        dailySuggestion.textContent = '🌟 Welcome! Ready to organize your tasks?';
+                    }
+
+                    console.log('UI elements reset successfully');
+
+                } catch (uiError) {
+                    console.error('Error resetting UI elements:', uiError);
+                }
+
+                // Try Firebase signout (don't wait for it, don't let it block logout)
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    firebase.auth().signOut().then(() => {
+                        console.log('Firebase signout successful');
+                    }).catch(error => {
+                        console.warn('Firebase signout failed (but continuing with logout):', error);
+                    });
+                }
+
+                // Show success message
+                showToast('Successfully logged out!', 'success');
+                console.log('Logout process completed successfully');
+
+                // Reload the page to restart the app
+                window.location.reload();
+
+                // Re-enable logout button after a delay
+                setTimeout(() => {
+                    if (logoutBtn) {
+                        logoutBtn.disabled = false;
+                        logoutBtn.textContent = 'Log Out';
+                        console.log('Logout button re-enabled');
+                    }
+                }, 2000);
+
+            } catch (error) {
+                console.error('Critical error during logout:', error);
+
+                // Force show auth screen even on error
+                showAuthScreen();
+
+                // Re-enable logout button
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.disabled = false;
+                    logoutBtn.textContent = 'Log Out';
+                }
+
+                showToast('Logout completed with some errors', 'info');
+            }
+        }
+
+        function performLogoutCleanup(userToCleanup) {
+            console.log('Performing logout cleanup...');
+
+            // Clear all user data
+            currentUser = null;
+            tasks = [];
+            userStreak = 0;
+
+            // Clear localStorage
+            localStorage.removeItem('specturnUser');
+            localStorage.removeItem('specturnRememberMe');
+            localStorage.removeItem('pendingAuthProvider');
+
+            // Clear user-specific data if user existed
+            if (userToCleanup) {
+                localStorage.removeItem(`specturnTasks_${userToCleanup.uid}`);
+                localStorage.removeItem(`specturnStreak_${userToCleanup.uid}`);
+                localStorage.removeItem(`specturnLastActive_${userToCleanup.uid}`);
+            }
+
+            // Reset UI elements
+            resetUIElements();
+
+            console.log('Logout cleanup completed');
+        }
+
+        function resetUIElements() {
+            // Clean up Firestore listeners
+            if (tasksListener) {
+                tasksListener();
+                tasksListener = null;
+            }
+
+            // Reset UI elements
+            const userInfo = document.getElementById('userInfo');
+            if (userInfo) userInfo.classList.add('hidden');
+
+            const userDisplayName = document.getElementById('userDisplayName');
+            if (userDisplayName) userDisplayName.textContent = '';
+
+            const userAvatar = document.getElementById('userAvatar');
+            if (userAvatar) {
+                userAvatar.style.display = 'none';
+                userAvatar.src = '';
+            }
+
+            const streakBadge = document.getElementById('streakBadge');
+            if (streakBadge) streakBadge.classList.add('hidden');
+
+            const completedToday = document.getElementById('completedToday');
+            if (completedToday) completedToday.textContent = '0';
+
+            // Clear all quadrants
+            const quadrants = ['urgent-important', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+            quadrants.forEach(quadrant => {
+                const container = document.getElementById(quadrant);
+                if (container) {
+                    container.innerHTML = '';
+                }
+            });
+
+            // Reset daily suggestion
+            const dailySuggestion = document.getElementById('dailySuggestion');
+            if (dailySuggestion) {
+                dailySuggestion.textContent = '🌟 Welcome! Ready to organize your tasks?';
+            }
+        }
+
+        // Task management with Firestore integration and proper error handling
+        function loadTasks() {
+            if (!currentUser) {
+                console.log('No current user, skipping task load');
+                return;
+            }
+
+            console.log('Loading tasks for user:', currentUser.uid);
+
+            // Show loading screen for task loading
+            showLoadingScreen('tasks-loading');
+
+            // For demo/guest users, use localStorage
+            if (DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                console.log('Loading tasks from localStorage for demo/guest user');
+                try {
+                    const userTasks = localStorage.getItem(`specturnTasks_${currentUser.uid}`);
+                    tasks = userTasks ? JSON.parse(userTasks) : [];
+                    console.log(`Loaded ${tasks.length} tasks from localStorage`);
+                    renderTasks();
+                    updateStats();
+
+                    // Brief delay for smooth UX
+                    setTimeout(() => {
+                        hideLoadingScreen('tasks-loading');
+                    }, 300);
+                } catch (error) {
+                    console.error('Error loading tasks from localStorage:', error);
+                    tasks = [];
+                    renderTasks();
+                    updateStats();
+                    hideLoadingScreen('tasks-loading');
+                    showToast('Error loading saved tasks', 'error');
+                }
+                return;
+            }
+
+            // For authenticated users, use Firestore with real-time updates
+            try {
+                const tasksRef = db.collection('users').doc(currentUser.uid).collection('tasks');
+
+                // Remove existing listener if any
+                if (tasksListener) {
+                    console.log('Removing existing Firestore listener');
+                    tasksListener();
+                    tasksListener = null;
+                }
+
+                // Set up real-time listener
+                console.log('Setting up Firestore real-time listener');
+                tasksListener = tasksRef.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+                    console.log(`Firestore snapshot received with ${snapshot.size} tasks`);
+                    tasks = [];
+
+                    snapshot.forEach((doc) => {
+                        try {
+                            const taskData = doc.data();
+                            const task = {
+                                id: doc.id,
+                                ...taskData,
+                                createdAt: taskData.createdAt?.toDate?.()?.toISOString() || taskData.createdAt || new Date().toISOString(),
+                                completedAt: taskData.completedAt?.toDate?.()?.toISOString() || taskData.completedAt
+                            };
+                            tasks.push(task);
+                        } catch (docError) {
+                            console.error('Error processing task document:', docError, doc.id);
+                        }
+                    });
+
+                    console.log(`Processed ${tasks.length} tasks successfully`);
+                    renderTasks();
+                    updateStats();
+                    hideLoadingScreen('tasks-loading');
+                }, (error) => {
+                    console.error('Error loading tasks from Firestore:', error);
+                    showToast('Failed to load tasks from cloud. Using local storage.', 'error');
+
+                    // Fallback to localStorage
+                    try {
+                        const userTasks = localStorage.getItem(`specturnTasks_${currentUser.uid}`);
+                        tasks = userTasks ? JSON.parse(userTasks) : [];
+                        console.log(`Fallback: Loaded ${tasks.length} tasks from localStorage`);
+                        renderTasks();
+                        updateStats();
+                        hideLoadingScreen('tasks-loading');
+                    } catch (localError) {
+                        console.error('Error loading from localStorage fallback:', localError);
+                        tasks = [];
+                        renderTasks();
+                        updateStats();
+                        hideLoadingScreen('tasks-loading');
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error setting up Firestore listener:', error);
+                showToast('Using offline mode', 'info');
+
+                // Fallback to localStorage
+                try {
+                    const userTasks = localStorage.getItem(`specturnTasks_${currentUser.uid}`);
+                    tasks = userTasks ? JSON.parse(userTasks) : [];
+                    console.log(`Fallback: Loaded ${tasks.length} tasks from localStorage`);
+                    renderTasks();
+                    updateStats();
+                    hideLoadingScreen('tasks-loading');
+                } catch (localError) {
+                    console.error('Error loading from localStorage fallback:', localError);
+                    tasks = [];
+                    renderTasks();
+                    updateStats();
+                    hideLoadingScreen('tasks-loading');
+                }
+            }
+        }
+
+        async function saveTasks() {
+            if (!currentUser) return;
+
+            // Always save to localStorage as backup
+            localStorage.setItem(`specturnTasks_${currentUser.uid}`, JSON.stringify(tasks));
+
+            // For demo/guest users, only use localStorage
+            if (DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                return;
+            }
+
+            // For authenticated users, sync to Firestore
+            try {
+                const batch = db.batch();
+                const userTasksRef = db.collection('users').doc(currentUser.uid).collection('tasks');
+
+                // This is a simple sync - in production you'd want more sophisticated sync logic
+                tasks.forEach(task => {
+                    const taskRef = userTasksRef.doc(task.id);
+                    const taskData = {
+                        ...task,
+                        createdAt: task.createdAt ? firebase.firestore.Timestamp.fromDate(new Date(task.createdAt)) : firebase.firestore.FieldValue.serverTimestamp(),
+                        completedAt: task.completedAt ? firebase.firestore.Timestamp.fromDate(new Date(task.completedAt)) : null
+                    };
+                    batch.set(taskRef, taskData, { merge: true });
+                });
+
+                await batch.commit();
+            } catch (error) {
+                console.error('Error syncing tasks to Firestore:', error);
+                // Continue with local storage - don't show error to user for sync issues
+            }
+        }
+
+        async function saveTaskToFirestore(task) {
+            if (!currentUser || DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                return; // Skip Firestore for demo users
+            }
+
+            try {
+                const taskData = {
+                    title: task.title,
+                    details: task.details || '',
+                    urgent: task.urgent,
+                    important: task.important,
+                    deadline: task.deadline || '',
+                    completed: task.completed || false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    completedAt: task.completedAt ? firebase.firestore.Timestamp.fromDate(new Date(task.completedAt)) : null
+                };
+
+                const docRef = await db.collection('users').doc(currentUser.uid).collection('tasks').add(taskData);
+
+                // Update local task with Firestore ID
+                task.id = docRef.id;
+
+                return docRef.id;
+            } catch (error) {
+                console.error('Error saving task to Firestore:', error);
+                showToast('Task saved locally. Will sync when online.', 'info');
+                throw error;
+            }
+        }
+
+        async function updateTaskInFirestore(task) {
+            if (!currentUser || DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                return; // Skip Firestore for demo users
+            }
+
+            try {
+                const taskData = {
+                    title: task.title,
+                    details: task.details || '',
+                    urgent: task.urgent,
+                    important: task.important,
+                    deadline: task.deadline || '',
+                    completed: task.completed || false,
+                    completedAt: task.completedAt ? firebase.firestore.Timestamp.fromDate(new Date(task.completedAt)) : null
+                };
+
+                await db.collection('users').doc(currentUser.uid).collection('tasks').doc(task.id).update(taskData);
+            } catch (error) {
+                console.error('Error updating task in Firestore:', error);
+                showToast('Task updated locally. Will sync when online.', 'info');
+            }
+        }
+
+        async function deleteTaskFromFirestore(taskId) {
+            if (!currentUser || DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                return; // Skip Firestore for demo users
+            }
+
+            try {
+                await db.collection('users').doc(currentUser.uid).collection('tasks').doc(taskId).delete();
+            } catch (error) {
+                console.error('Error deleting task from Firestore:', error);
+                showToast('Task deleted locally. Will sync when online.', 'info');
+            }
+        }
+
+
+
+        function openTaskModal(task = null) {
+            currentEditingTask = task;
+            const modal = document.getElementById('taskModal');
+            const title = document.getElementById('modalTitle');
+            const form = document.getElementById('taskForm');
+
+            if (task) {
+                title.innerHTML = '✏️ Edit Task';
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDetails').value = task.details || '';
+                document.getElementById('taskUrgency').value = task.urgent ? 'urgent' : 'not-urgent';
+                document.getElementById('taskImportance').value = task.important ? 'important' : 'not-important';
+                document.getElementById('taskDeadline').value = task.deadline || '';
+            } else {
+                title.innerHTML = '✨ Create New Task';
+                form.reset();
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+            currentEditingTask = null;
+            document.getElementById('titleError').classList.add('hidden');
+        }
+
+        async function saveTask(event) {
+            event.preventDefault();
+            console.log('Save task function called');
+
+            // Clear any previous error states
+            document.getElementById('titleError').classList.add('hidden');
+
+            const title = document.getElementById('taskTitle').value.trim();
+            const details = document.getElementById('taskDetails').value.trim();
+            const urgency = document.getElementById('taskUrgency').value;
+            const importance = document.getElementById('taskImportance').value;
+            const deadline = document.getElementById('taskDeadline').value;
+
+            console.log('Task data:', { title, details, urgency, importance, deadline });
+
+            // Validation
+            if (!title) {
+                console.log('Validation failed: No title');
+                document.getElementById('titleError').classList.remove('hidden');
+                document.getElementById('taskTitle').focus();
+                return;
+            }
+
+            if (!urgency || !importance) {
+                console.log('Validation failed: Missing urgency or importance');
+                showToast('Please select both urgency and importance levels', 'error');
+                return;
+            }
+
+            // Show saving state
+            const saveBtn = document.getElementById('saveTaskBtn');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                const task = {
+                    id: currentEditingTask ? currentEditingTask.id : `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    title,
+                    details,
+                    urgent: urgency === 'urgent',
+                    important: importance === 'important',
+                    deadline,
+                    completed: currentEditingTask ? currentEditingTask.completed : false,
+                    createdAt: currentEditingTask ? currentEditingTask.createdAt : new Date().toISOString(),
+                    completedAt: currentEditingTask ? currentEditingTask.completedAt : null
+                };
+
+                console.log('Task object created:', task);
+
+                if (currentEditingTask) {
+                    console.log('Updating existing task');
+                    // Update existing task
+                    const index = tasks.findIndex(t => t.id === currentEditingTask.id);
+                    if (index !== -1) {
+                        tasks[index] = task;
+                        console.log('Task updated in local array');
+
+                        // Update in Firestore
+                        try {
+                            await updateTaskInFirestore(task);
+                            console.log('Task updated in Firestore');
+                        } catch (firestoreError) {
+                            console.warn('Firestore update failed, continuing with local update:', firestoreError);
+                        }
+                    } else {
+                        console.error('Task not found in local array for update');
+                        throw new Error('Task not found for update');
+                    }
+                } else {
+                    console.log('Creating new task');
+                    // Create new task
+                    try {
+                        // Try to save to Firestore first for authenticated users
+                        if (!DEMO_MODE && currentUser.provider !== 'guest' && !currentUser.uid.startsWith('demo_')) {
+                            console.log('Attempting to save to Firestore');
+                            await saveTaskToFirestore(task);
+                            console.log('Task saved to Firestore');
+                        } else {
+                            console.log('Skipping Firestore save for demo/guest user');
+                        }
+
+                        // Add to local tasks array
+                        tasks.push(task);
+                        console.log('Task added to local array');
+                    } catch (firestoreError) {
+                        // If Firestore fails, still add locally
+                        console.warn('Firestore save failed, saving locally:', firestoreError);
+                        tasks.push(task);
+                        showToast('Task saved locally. Will sync when online.', 'info');
+                    }
+                }
+
+                // Save to localStorage as backup
+                try {
+                    saveTasks();
+                    console.log('Tasks saved to localStorage');
+                } catch (localError) {
+                    console.error('Error saving to localStorage:', localError);
+                }
+
+                // Update UI (for demo users and as fallback)
+                if (DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                    console.log('Updating UI for demo/guest user');
+                    renderTasks();
+                    updateStats();
+                }
+
+                // Close modal and reset form
+                closeTaskModal();
+                document.getElementById('taskForm').reset();
+
+                // Show success animation
+                showTaskAddedAnimation();
+
+                console.log('Task save completed successfully');
+
+            } catch (error) {
+                console.error('Error saving task:', error);
+                showToast(`Failed to save task: ${error.message}`, 'error');
+            } finally {
+                // Reset button state
+                if (saveBtn) {
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                }
+            }
+        }
+
+        function showTaskAddedAnimation() {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-6 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl shadow-lg z-50 animate-bounce-in';
+            notification.innerHTML = '✅ Task added successfully!';
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        async function deleteTask(taskId) {
+            console.log(`Delete task called: ${taskId}`);
+
+            if (!confirm('Are you sure you want to delete this task?')) {
+                console.log('Task deletion cancelled by user');
+                return;
+            }
+
+            // Find the task to delete
+            const taskToDelete = tasks.find(t => t.id === taskId);
+            if (!taskToDelete) {
+                console.error('Task not found for deletion:', taskId);
+                showToast('Error: Task not found', 'error');
+                return;
+            }
+
+            // Store original tasks array for rollback
+            const originalTasks = [...tasks];
+
+            try {
+                console.log('Deleting task:', taskToDelete.title);
+
+                // Remove from local array
+                tasks = tasks.filter(t => t.id !== taskId);
+
+                // Delete from Firestore
+                try {
+                    await deleteTaskFromFirestore(taskId);
+                    console.log('Task deleted from Firestore');
+                } catch (firestoreError) {
+                    console.warn('Firestore deletion failed, continuing with local deletion:', firestoreError);
+                }
+
+                // Save to localStorage as backup
+                try {
+                    saveTasks();
+                    console.log('Tasks saved to localStorage after deletion');
+                } catch (localError) {
+                    console.error('Error saving to localStorage after deletion:', localError);
+                }
+
+                // Update UI (for demo users and as fallback)
+                if (DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                    renderTasks();
+                    updateStats();
+                }
+
+                showToast('Task deleted successfully', 'success');
+                console.log('Task deletion completed successfully');
+
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                showToast(`Failed to delete task: ${error.message}`, 'error');
+
+                // Revert local changes on error
+                tasks = originalTasks;
+                renderTasks();
+                updateStats();
+            }
+        }
+
+        async function toggleTaskComplete(taskId) {
+            console.log(`Toggle task complete called: ${taskId}`);
+
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) {
+                console.error('Task not found for toggle:', taskId);
+                showToast('Error: Task not found', 'error');
+                return;
+            }
+
+            // Store original state for rollback
+            const originalCompleted = task.completed;
+            const originalCompletedAt = task.completedAt;
+
+            try {
+                // Update task status
+                task.completed = !task.completed;
+                task.completedAt = task.completed ? new Date().toISOString() : null;
+
+                console.log(`Task ${taskId} marked as ${task.completed ? 'completed' : 'incomplete'}`);
+
+                // Update in Firestore
+                try {
+                    await updateTaskInFirestore(task);
+                    console.log('Task status updated in Firestore');
+                } catch (firestoreError) {
+                    console.warn('Firestore update failed, continuing with local update:', firestoreError);
+                }
+
+                // Save to localStorage as backup
+                try {
+                    saveTasks();
+                    console.log('Tasks saved to localStorage after toggle');
+                } catch (localError) {
+                    console.error('Error saving to localStorage after toggle:', localError);
+                }
+
+                // Update UI (for demo users and as fallback)
+                if (DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                    renderTasks();
+                    updateStats();
+                }
+
+                if (task.completed) {
+                    showCompletionAnimation(taskId);
+                    updateStreak();
+                    showToast('Great job! Task completed! 🎉', 'success');
+                } else {
+                    showToast('Task marked as incomplete', 'info');
+                }
+
+                console.log('Task toggle completed successfully');
+
+            } catch (error) {
+                console.error('Error updating task:', error);
+                showToast(`Failed to update task: ${error.message}`, 'error');
+
+                // Revert changes on error
+                task.completed = originalCompleted;
+                task.completedAt = originalCompletedAt;
+
+                // Re-render to show reverted state
+                if (DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                    renderTasks();
+                    updateStats();
+                }
+            }
+        }
+
+        function showCompletionAnimation(taskId) {
+            const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+            if (taskElement) {
+                taskElement.classList.add('task-complete-animation');
+
+                // Create burst effect
+                const burst = document.createElement('div');
+                burst.className = 'absolute inset-0 flex items-center justify-center text-4xl animate-bounce-in pointer-events-none';
+                burst.innerHTML = '🎉';
+                taskElement.style.position = 'relative';
+                taskElement.appendChild(burst);
+
+                setTimeout(() => {
+                    burst.remove();
+                    taskElement.classList.remove('task-complete-animation');
+                }, 800);
+            }
+        }
+
+        function getQuadrant(task) {
+            if (task.urgent && task.important) return 'urgent-important';
+            if (!task.urgent && task.important) return 'important-not-urgent';
+            if (task.urgent && !task.important) return 'not-important-urgent';
+            return 'not-important-not-urgent';
+        }
+
+        function getQuadrantColor(quadrant) {
+            const colors = {
+                'urgent-important': '#d32f2f',
+                'important-not-urgent': '#388e3c',
+                'not-important-urgent': '#f57c00',
+                'not-important-not-urgent': '#7b1fa2'
+            };
+            return colors[quadrant];
+        }
+
+        function renderTasks() {
+            console.log(`Rendering ${tasks.length} tasks`);
+
+            const quadrants = ['urgent-important', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+
+            // Clear all quadrants
+            quadrants.forEach(quadrant => {
+                const container = document.getElementById(quadrant);
+                if (container) {
+                    container.innerHTML = '';
+                } else {
+                    console.error(`Quadrant container not found: ${quadrant}`);
+                }
+            });
+
+            if (tasks.length === 0) {
+                console.log('No tasks to render, showing empty state');
+                const emptyState = document.getElementById('emptyState');
+                const matrixGrid = document.getElementById('matrixGrid');
+
+                if (emptyState) emptyState.classList.remove('hidden');
+                if (matrixGrid) matrixGrid.classList.add('hidden');
+                return;
+            }
+
+            console.log('Rendering tasks in matrix grid');
+            const emptyState = document.getElementById('emptyState');
+            const matrixGrid = document.getElementById('matrixGrid');
+
+            if (emptyState) emptyState.classList.add('hidden');
+            if (matrixGrid) matrixGrid.classList.remove('hidden');
+
+            tasks.forEach((task, index) => {
+                try {
+                    const quadrant = getQuadrant(task);
+                    const container = document.getElementById(quadrant);
+
+                    if (!container) {
+                        console.error(`Container not found for quadrant: ${quadrant}`);
+                        return;
+                    }
+
+                    const color = getQuadrantColor(quadrant);
+
+                    const taskCard = document.createElement('div');
+                    taskCard.className = `task-card glass-effect rounded-xl p-4 cursor-pointer task-enter ${task.completed ? 'opacity-60' : ''} bg-white bg-opacity-60 hover:bg-opacity-80 transition-all duration-200`;
+                    taskCard.style.borderLeft = `4px solid ${color}`;
+                    taskCard.style.animationDelay = `${index * 0.1}s`;
+                    taskCard.draggable = true;
+                    taskCard.setAttribute('data-task-id', task.id);
+
+                    // Add drag event listener
+                    taskCard.addEventListener('dragstart', function (e) {
+                        console.log(`Dragging task: ${task.id}`);
+                        e.dataTransfer.setData("text", task.id);
+                    });
+
+                    const deadlineText = task.deadline ?
+                        `<div class="flex items-center text-xs text-gray-500 mt-2">
+                            <span class="mr-1">📅</span>
+                            ${new Date(task.deadline).toLocaleDateString()}
+                        </div>` : '';
+
+                    // Escape task data for safe HTML insertion
+                    const safeTaskData = JSON.stringify(task).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+
+                    taskCard.innerHTML = `
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-800 ${task.completed ? 'line-through' : ''}">${escapeHtml(task.title)}</h4>
+                                ${task.details ? `<p class="text-sm text-gray-600 mt-2">${escapeHtml(task.details)}</p>` : ''}
+                                ${deadlineText}
+                            </div>
+                            <div class="flex items-center space-x-2 ml-3">
+                                <button data-action="toggle" data-task-id="${task.id}" class="text-lg ${task.completed ? 'text-green-500' : 'text-gray-400'} hover:text-green-500 transition-colors" title="${task.completed ? 'Mark as incomplete' : 'Mark as complete'}">
+                                    ${task.completed ? '✅' : '⭕'}
+                                </button>
+                                <button data-action="edit" data-task-id="${task.id}" class="text-lg text-blue-500 hover:text-blue-600 transition-colors" title="Edit task">
+                                    ✏️
+                                </button>
+                                <button data-action="delete" data-task-id="${task.id}" class="text-lg text-red-500 hover:text-red-600 transition-colors" title="Delete task">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Add event listeners for task actions
+                    const toggleBtn = taskCard.querySelector('[data-action="toggle"]');
+                    const editBtn = taskCard.querySelector('[data-action="edit"]');
+                    const deleteBtn = taskCard.querySelector('[data-action="delete"]');
+
+                    if (toggleBtn) {
+                        toggleBtn.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log(`Toggle task clicked: ${task.id}`);
+                            toggleTaskComplete(task.id);
+                        });
+                    }
+
+                    if (editBtn) {
+                        editBtn.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log(`Edit task clicked: ${task.id}`);
+                            openTaskModal(task);
+                        });
+                    }
+
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log(`Delete task clicked: ${task.id}`);
+                            deleteTask(task.id);
+                        });
+                    }
+
+                    container.appendChild(taskCard);
+
+                } catch (error) {
+                    console.error('Error rendering task:', error, task);
+                }
+            });
+
+            // Update mobile view
+            updateMobileView();
+            console.log('Task rendering completed');
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Mobile functionality with proper event handling
+        function showMobileQuadrant(quadrant, clickedTab = null) {
+            console.log(`Showing mobile quadrant: ${quadrant}`);
+            currentMobileQuadrant = quadrant;
+            updateMobileView();
+
+            // Update tab styles
+            document.querySelectorAll('.mobile-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            } else {
+                // Find the correct tab by quadrant
+                const quadrants = ['urgent-important', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+                const tabIndex = quadrants.indexOf(quadrant);
+                const tabs = document.querySelectorAll('.mobile-tab');
+                if (tabs[tabIndex]) {
+                    tabs[tabIndex].classList.add('active');
+                }
+            }
+        }
+
+        function updateMobileView() {
+            if (window.innerWidth >= 768) {
+                // Desktop view - show all quadrants
+                const quadrants = ['urgent-important', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+                quadrants.forEach(q => {
+                    const element = document.querySelector(`[data-quadrant="${q}"]`);
+                    if (element) {
+                        element.style.display = 'block';
+                    }
+                });
+                return;
+            }
+
+            // Mobile view - show only current quadrant
+            const quadrants = ['urgent-important', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+
+            quadrants.forEach(q => {
+                const element = document.querySelector(`[data-quadrant="${q}"]`);
+                if (element) {
+                    element.style.display = q === currentMobileQuadrant ? 'block' : 'none';
+                }
+            });
+        }
+
+        // Drag and drop with proper error handling
+        function handleTaskDrop(taskId, quadrant) {
+            console.log(`Handling task drop: ${taskId} to ${quadrant}`);
+
+            const task = tasks.find(t => t.id === taskId);
+
+            if (!task) {
+                console.error('Task not found for drop:', taskId);
+                showToast('Error: Task not found', 'error');
+                return;
+            }
+
+            // Store original values for rollback
+            const originalUrgent = task.urgent;
+            const originalImportant = task.important;
+
+            try {
+                // Update task properties based on quadrant
+                switch (quadrant) {
+                    case 'urgent-important':
+                        task.urgent = true;
+                        task.important = true;
+                        break;
+                    case 'important-not-urgent':
+                        task.urgent = false;
+                        task.important = true;
+                        break;
+                    case 'not-important-urgent':
+                        task.urgent = true;
+                        task.important = false;
+                        break;
+                    case 'not-important-not-urgent':
+                        task.urgent = false;
+                        task.important = false;
+                        break;
+                    default:
+                        console.error('Unknown quadrant:', quadrant);
+                        return;
+                }
+
+                console.log(`Task ${taskId} moved to ${quadrant}:`, { urgent: task.urgent, important: task.important });
+
+                // Save changes
+                saveTasks();
+
+                // Update Firestore if applicable
+                if (!DEMO_MODE && currentUser.provider !== 'guest' && !currentUser.uid.startsWith('demo_')) {
+                    updateTaskInFirestore(task).catch(error => {
+                        console.error('Error updating task in Firestore after move:', error);
+                        // Don't revert - local change is still valid
+                    });
+                }
+
+                // Update UI for demo users
+                if (DEMO_MODE || currentUser.provider === 'guest' || currentUser.uid.startsWith('demo_')) {
+                    renderTasks();
+                    updateStats();
+                }
+
+                // Show move animation
+                showMoveAnimation();
+
+            } catch (error) {
+                console.error('Error moving task:', error);
+
+                // Rollback changes
+                task.urgent = originalUrgent;
+                task.important = originalImportant;
+
+                showToast('Failed to move task', 'error');
+            }
+        }
+
+        function showMoveAnimation() {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg z-50 animate-bounce-in';
+            notification.innerHTML = '🎯 Task moved successfully!';
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 2000);
+        }
+
+        // Remove drag-over class when dragging leaves
+        document.querySelectorAll('.quadrant').forEach(quadrant => {
+            quadrant.addEventListener('dragleave', function (e) {
+                if (!this.contains(e.relatedTarget)) {
+                    this.classList.remove('drag-over');
+                }
+            });
+        });
+
+        // Stats and suggestions
+        function updateStats() {
+            const completedToday = tasks.filter(t =>
+                t.completed && t.completedAt &&
+                new Date(t.completedAt).toDateString() === new Date().toDateString()
+            ).length;
+
+            document.getElementById('completedToday').textContent = completedToday;
+            updateDailySuggestion();
+        }
+
+        function updateDailySuggestion() {
+            // Get task counts for each quadrant (only non-completed tasks)
+            const doNowTasks = tasks.filter(t => t.urgent && t.important && !t.completed).length;
+            const scheduleItTasks = tasks.filter(t => !t.urgent && t.important && !t.completed).length;
+            const delegateTasks = tasks.filter(t => t.urgent && !t.important && !t.completed).length;
+            const eliminateTasks = tasks.filter(t => !t.urgent && !t.important && !t.completed).length;
+
+            let suggestion = '';
+            let icon = '';
+
+            // Follow the strict priority hierarchy from highest to lowest importance
+            if (doNowTasks > 0) {
+                // Rule 1: If there are ANY tasks in the "Do Now" (Red) quadrant
+                icon = '🔥';
+                suggestion = "High alert! Focus on completing your urgent and important tasks in the 'Do Now' quadrant first.";
+            } else if (scheduleItTasks > 0) {
+                // Rule 2: If "Do Now" is empty, but there are tasks in "Schedule It" (Green)
+                icon = '✅';
+                suggestion = "Great work! Your urgent tasks are clear. Now is the perfect time to make progress on your long-term goals in the 'Schedule It' quadrant.";
+            } else if (delegateTasks > 0) {
+                // Rule 3: If "Do Now" AND "Schedule It" are empty, but there are tasks in "Delegate" (Yellow)
+                icon = '⚡️';
+                suggestion = "You're on top of your main priorities. See if you can delegate these urgent tasks to keep your focus sharp.";
+            } else if (eliminateTasks > 0) {
+                // Rule 4: If ONLY the "Eliminate" (Purple) quadrant has tasks
+                icon = '🗑️';
+                suggestion = "Excellent! Your priority list is clear. Remember to eliminate or avoid these tasks to maintain peak productivity.";
+            } else {
+                // Rule 5: If ALL quadrants are empty
+                icon = '✨';
+                suggestion = "A blank slate! Ready to conquer your day? Add your first task to get started.";
+            }
+
+            const suggestionElement = document.getElementById('dailySuggestion');
+            const suggestionBar = document.getElementById('suggestionBar');
+
+            // Add updating class for smooth transition
+            suggestionBar.classList.add('updating');
+
+            // Update content with a slight delay for smooth transition
+            setTimeout(() => {
+                suggestionElement.textContent = `${icon} ${suggestion}`;
+                suggestionBar.classList.remove('updating');
+            }, 150);
+        }
+
+        function updateStreak() {
+            if (!currentUser) return;
+
+            const today = new Date().toDateString();
+            const lastActiveDate = localStorage.getItem(`specturnLastActive_${currentUser.uid}`);
+            const currentStreak = parseInt(localStorage.getItem(`specturnStreak_${currentUser.uid}`) || '0');
+
+            const completedToday = tasks.filter(t =>
+                t.completed && t.completedAt &&
+                new Date(t.completedAt).toDateString() === today
+            ).length;
+
+            if (completedToday > 0) {
+                if (lastActiveDate === today) {
+                    // Already counted today
+                    userStreak = currentStreak;
+                } else {
+                    // New day with completed tasks
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+
+                    if (lastActiveDate === yesterday.toDateString()) {
+                        // Consecutive day
+                        userStreak = currentStreak + 1;
+                    } else {
+                        // Streak broken, start new
+                        userStreak = 1;
+                    }
+
+                    localStorage.setItem(`specturnStreak_${currentUser.uid}`, userStreak.toString());
+                    localStorage.setItem(`specturnLastActive_${currentUser.uid}`, today);
+                }
+
+                if (userStreak > 0) {
+                    document.getElementById('streakCount').textContent = userStreak;
+                    document.getElementById('streakBadge').classList.remove('hidden');
+                }
+            }
+        }
+
+        // Analytics Functions
+        function openAnalyticsModal() {
+            console.log('Opening analytics modal');
+            const modal = document.getElementById('analyticsModal');
+            const loading = document.getElementById('analyticsLoading');
+            const content = document.getElementById('analyticsContent');
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                loading.classList.remove('hidden');
+                content.classList.add('hidden');
+
+                // Load analytics data
+                setTimeout(() => {
+                    loadAnalyticsData();
+                }, 500);
+            }
+        }
+
+        function closeAnalyticsModal() {
+            console.log('Closing analytics modal');
+            const modal = document.getElementById('analyticsModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        async function loadAnalyticsData() {
+            try {
+                console.log('Loading analytics data...');
+
+                if (!currentUser) {
+                    console.warn('No current user for analytics');
+                    return;
+                }
+
+                // Calculate analytics from current tasks
+                const analytics = calculateAnalytics(tasks);
+
+                // Update UI with analytics data
+                updateAnalyticsUI(analytics);
+
+                // Show content and hide loading
+                document.getElementById('analyticsLoading').classList.add('hidden');
+                document.getElementById('analyticsContent').classList.remove('hidden');
+
+                console.log('Analytics data loaded successfully');
+
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                showToast('Failed to load analytics data', 'error');
+                closeAnalyticsModal();
+            }
+        }
+
+        function calculateAnalytics(taskList) {
+            const now = new Date();
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+            // Basic counts
+            const totalTasks = taskList.length;
+            const completedTasks = taskList.filter(t => t.completed).length;
+            const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            // Matrix breakdown
+            const urgentImportant = taskList.filter(t => t.urgent && t.important).length;
+            const importantNotUrgent = taskList.filter(t => !t.urgent && t.important).length;
+            const urgentNotImportant = taskList.filter(t => t.urgent && !t.important).length;
+            const notImportantNotUrgent = taskList.filter(t => !t.urgent && !t.important).length;
+
+            // Weekly activity
+            const weeklyData = [];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+                const dateString = date.toDateString();
+                const dayName = dayNames[date.getDay()];
+
+                const completedOnDay = taskList.filter(t =>
+                    t.completed && t.completedAt &&
+                    new Date(t.completedAt).toDateString() === dateString
+                ).length;
+
+                weeklyData.push({
+                    day: dayName,
+                    date: dateString,
+                    completed: completedOnDay
+                });
+            }
+
+            // Weekly stats
+            const weeklyCompleted = weeklyData.reduce((sum, day) => sum + day.completed, 0);
+            const dailyAverage = Math.round(weeklyCompleted / 7 * 10) / 10;
+            const bestDay = weeklyData.reduce((best, day) =>
+                day.completed > best.completed ? day : best,
+                { day: '-', completed: 0 }
+            );
+
+            // Current streak
+            const currentStreak = userStreak || 0;
+
+            return {
+                totalTasks,
+                completedTasks,
+                completionRate,
+                matrix: {
+                    urgentImportant,
+                    importantNotUrgent,
+                    urgentNotImportant,
+                    notImportantNotUrgent
+                },
+                weekly: {
+                    data: weeklyData,
+                    completed: weeklyCompleted,
+                    dailyAverage,
+                    bestDay: bestDay.day
+                },
+                streak: currentStreak
+            };
+        }
+
+        function updateAnalyticsUI(analytics) {
+            console.log('Updating analytics UI with data:', analytics);
+
+            // Overview cards
+            document.getElementById('totalTasksCount').textContent = analytics.totalTasks;
+            document.getElementById('completedTasksCount').textContent = analytics.completedTasks;
+            document.getElementById('completionRate').textContent = `${analytics.completionRate}%`;
+
+            // Progress bar
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const progressPercentage = document.getElementById('progressPercentage');
+
+            setTimeout(() => {
+                progressBar.style.width = `${analytics.completionRate}%`;
+            }, 300);
+
+            progressText.textContent = `${analytics.completedTasks} of ${analytics.totalTasks} tasks completed`;
+            progressPercentage.textContent = `${analytics.completionRate}%`;
+
+            // Matrix breakdown
+            document.getElementById('urgentImportantCount').textContent = analytics.matrix.urgentImportant;
+            document.getElementById('importantNotUrgentCount').textContent = analytics.matrix.importantNotUrgent;
+            document.getElementById('urgentNotImportantCount').textContent = analytics.matrix.urgentNotImportant;
+            document.getElementById('notImportantNotUrgentCount').textContent = analytics.matrix.notImportantNotUrgent;
+
+            // Weekly chart
+            const weeklyChart = document.getElementById('weeklyChart');
+            weeklyChart.innerHTML = '';
+
+            const maxCompleted = Math.max(...analytics.weekly.data.map(d => d.completed), 1);
+
+            analytics.weekly.data.forEach(dayData => {
+                const barHeight = maxCompleted > 0 ? (dayData.completed / maxCompleted) * 100 : 0;
+
+                const dayElement = document.createElement('div');
+                dayElement.className = 'flex items-end justify-between p-3 glass-effect rounded-lg';
+                dayElement.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="font-medium text-gray-700 w-8">${dayData.day}</span>
+                        <div class="flex-1 bg-gray-200 rounded-full h-4 min-w-[100px]">
+                            <div class="bg-gradient-to-r from-purple-600 to-blue-600 h-4 rounded-full transition-all duration-1000" 
+                                 style="width: ${barHeight}%"></div>
+                        </div>
+                    </div>
+                    <span class="font-bold text-purple-600 ml-3">${dayData.completed}</span>
+                `;
+
+                weeklyChart.appendChild(dayElement);
+            });
+
+            // Streak and weekly stats
+            document.getElementById('currentStreak').textContent = analytics.streak;
+            document.getElementById('weeklyCompleted').textContent = analytics.weekly.completed;
+            document.getElementById('dailyAverage').textContent = analytics.weekly.dailyAverage;
+            document.getElementById('bestDay').textContent = analytics.weekly.bestDay;
+
+            console.log('Analytics UI updated successfully');
+        }
+
+        // Responsive handling
+        window.addEventListener('resize', updateMobileView);
+
+        // Initialize mobile view
+        document.addEventListener('DOMContentLoaded', function () {
+            updateMobileView();
+        });
+    </script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'96f08d573393aed9',t:'MTc1NTE3NTU1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+</body>
+
+</html>
