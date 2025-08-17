@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Negative Space</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000000;
+            color: #FFFFFF;
+            font-family: 'Roboto Mono', monospace;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000000;
+        }
+        #gameCanvas {
+            display: block;
+            background: #000000;
+            cursor: none;
+        }
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: #000000;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .screen.active { opacity: 1; visibility: visible; }
+        .title { font-size: 4rem; font-weight: 700; margin-bottom: 2rem; text-align: center; letter-spacing: 0.2em; }
+        .subtitle { font-size: 1.2rem; font-weight: 300; margin-bottom: 3rem; text-align: center; opacity: 0.8; }
+        .button {
+            background: transparent; border: 2px solid #FFFFFF; color: #FFFFFF;
+            font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 400;
+            padding: 1rem 2rem; margin: 0.5rem; cursor: pointer;
+            transition: all 0.3s ease; letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        .button:hover { background: #FFFFFF; color: #000000; transform: scale(1.05); }
+        .score { position: absolute; top: 2rem; left: 2rem; font-size: 1.5rem; font-weight: 400; z-index: 100; }
+        .modal {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000000; border: 3px solid #FFFFFF;
+            padding: 2rem; text-align: center;
+            opacity: 0; visibility: hidden;
+            transition: all 0.3s ease; z-index: 200;
+        }
+        .modal.active { opacity: 1; visibility: visible; }
+        .modal h2 { font-size: 2rem; margin-bottom: 1rem; }
+        .modal p { font-size: 1.2rem; margin-bottom: 1.5rem; }
+        .modal input {
+            background: transparent; border: 2px solid #FFFFFF; color: #FFFFFF;
+            font-family: 'Roboto Mono', monospace; font-size: 1.5rem; padding: 0.5rem;
+            text-align: center; text-transform: uppercase; letter-spacing: 0.2em;
+            margin-bottom: 1rem; width: 150px;
+        }
+        .modal .input-label { font-size: 0.9rem; margin-bottom: 0.5rem; opacity: 0.8; }
+        .modal input:focus { outline: none; box-shadow: 0 0 10px #FFFFFF; }
+        .flash {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #FFFFFF; opacity: 0; pointer-events: none; z-index: 150;
+        }
+        .leaderboard { width: 100%; max-width: 600px; margin: 2rem 0; }
+        .leaderboard-header {
+            display: grid; grid-template-columns: 1fr 2fr 2fr; gap: 1rem; padding: 1rem;
+            border-bottom: 2px solid #FFFFFF; font-weight: 700; font-size: 1.2rem;
+        }
+        .leaderboard-row {
+            display: grid; grid-template-columns: 1fr 2fr 2fr; gap: 1rem; padding: 0.8rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3); opacity: 0.9;
+        }
+        
+        /* --- MODIFIED/NEW CSS FOR INTENSITY --- */
+        .inversion-mode, .inversion-mode #gameCanvas, .inversion-mode .screen { background: #FFFFFF !important; }
+        .inversion-mode .title, .inversion-mode .subtitle, .inversion-mode .score, .inversion-mode .modal p, .inversion-mode .modal .input-label, .inversion-mode .leaderboard-row { color: #000000 !important; }
+        .inversion-mode .button { border-color: #000000 !important; color: #000000 !important; }
+        .inversion-mode .button:hover { background: #000000 !important; color: #FFFFFF !important; }
+        .inversion-mode .modal { border-color: #000000; background: #FFFFFF; }
+        .inversion-mode .modal input { border-color: #000000; color: #000000; }
+        .inversion-mode .modal input:focus { box-shadow: 0 0 10px #000000; }
+        .inversion-mode .leaderboard-header, .inversion-mode .leaderboard-row { border-color: rgba(0, 0, 0, 0.3); }
+
+        .bonus-popup {
+            position: absolute; top: 40%; left: 50%;
+            font-size: 1.5rem; font-weight: 700; pointer-events: none;
+            z-index: 300; animation: bonusPopup 2s ease-out forwards;
+        }
+        @keyframes bonusPopup {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
+            100% { opacity: 0; transform: translate(-50%, -100px) scale(1.2); }
+        }
+        
+        @media (max-width: 768px) {
+            .title { font-size: 2.5rem; }
+            .subtitle { font-size: 1rem; }
+            .button { font-size: 0.9rem; padding: 0.8rem 1.5rem; }
+            .score { font-size: 1.2rem; top: 1rem; left: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div class="score" id="scoreDisplay">0</div>
+        <div class="flash" id="flashEffect"></div>
+
+        <div class="screen active" id="mainMenu">
+            <h1 class="title">NEGATIVE SPACE</h1>
+            <p class="subtitle">Navigate the ever-changing void</p>
+            <button class="button" onclick="startGame()">START GAME</button>
+            <button class="button" onclick="showLeaderboard()">LEADERBOARD</button>
+        </div>
+
+        <div class="modal" id="gameOverModal">
+            <h2>GAME OVER</h2>
+            <p id="finalScore">Score: 0</p>
+            <div class="input-label">Enter Your Initials for the Leaderboard</div>
+            <input type="text" id="playerInitials" placeholder="___" maxlength="3" onkeyup="this.value = this.value.toUpperCase();">
+            <br>
+            <button class="button" onclick="submitScore()">SUBMIT SCORE</button>
+            <button class="button" onclick="backToMenu()">MAIN MENU</button>
+        </div>
+
+        <div class="screen" id="leaderboardScreen">
+            <h1 class="title">LEADERBOARD</h1>
+            <div class="leaderboard" id="leaderboardList">
+                <div class="leaderboard-header">
+                    <div>RANK</div>
+                    <div>NAME</div>
+                    <div>SCORE</div>
+                </div>
+                <div id="leaderboardEntries"></div>
+            </div>
+            <button class="button" onclick="backToMenu()">BACK</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Variables
+        let canvas, ctx;
+        let gameState = 'menu';
+        let score = 0;
+        let gameTime = 0;
+        let lastTime = 0;
+        let animationId;
+        
+        // Player
+        const player = {
+            x: 0, y: 0, radius: 8, glowRadius: 16, glowIntensity: 0
+        };
+
+        // Game Objects
+        let shapes = [];
+        let particles = [];
+        let stars = [];
+
+        // --- NEW/MODIFIED: Difficulty Settings ---
+        const BASE_SHAPE_SPEED = 80;
+        const BASE_SPAWN_INTERVAL = 1.8; // seconds between rows
+        const SPEED_ACCELERATION = 0.0001;
+        const SPAWN_ACCELERATION = 0.00015;
+        const INVERSION_DURATION = 15;
+        const INVERSION_INTERVAL = 7500;
+
+        // --- NEW: Hazard Unlock Thresholds ---
+        const HAZARD_THRESHOLDS = { drifters: 2000, spinners: 5000, phantoms: 10000 };
+        let unlockedHazards = { drifters: false, spinners: false, phantoms: false };
+        let hazardNotified = { drifters: false, spinners: false, phantoms: false };
+
+        // --- NEW: Inversion State ---
+        let inversionActive = false;
+        let inversionTimer = 0;
+        let lastInversionScore = 0;
+
+        const SHAPE_TEMPLATES = [
+            [[1, 1, 1, 1]], [[1, 1], [1, 1]], [[0, 1, 0], [1, 1, 1]],
+            [[1, 0], [1, 0], [1, 1]], [[0, 1], [0, 1], [1, 1]],
+            [[0, 1, 1], [1, 1, 0]], [[1, 1, 0], [0, 1, 1]]
+        ];
+
+        let lastSpawnTime = 0;
+
+        // Initialize Game
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            initializeStars();
+            initializeLocalStorage();
+            gameLoop();
+        }
+
+        function initializeStars() {
+            stars = [];
+            for (let i = 0; i < 150; i++) {
+                stars.push({
+                    x: Math.random() * (canvas.width || window.innerWidth),
+                    y: Math.random() * (canvas.height || window.innerHeight),
+                    size: Math.random() * 2 + 0.5,
+                    speed: Math.random() * 20 + 10
+                });
+            }
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (gameState === 'playing') {
+                player.y = canvas.height - 50;
+            }
+        }
+
+        function handleMouseMove(e) { if (gameState === 'playing') player.x = e.clientX; }
+        function handleTouchMove(e) { e.preventDefault(); if (gameState === 'playing' && e.touches.length > 0) player.x = e.touches[0].clientX; }
+        function handleTouchStart(e) { e.preventDefault(); handleTouchMove(e); }
+
+        // Game Logic
+        function startGame() {
+            gameState = 'playing';
+            score = 0; gameTime = 0; shapes = []; particles = [];
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 50;
+            
+            // --- THE FIX: Reset the spawn timer ---
+            lastSpawnTime = 0;
+            
+            // --- NEW: Reset difficulty and hazards ---
+            lastInversionScore = 0;
+            inversionActive = false;
+            document.getElementById('gameContainer').classList.remove('inversion-mode');
+            Object.keys(unlockedHazards).forEach(key => unlockedHazards[key] = false);
+            Object.keys(hazardNotified).forEach(key => hazardNotified[key] = false);
+
+            hideAllScreens();
+            document.getElementById('scoreDisplay').style.display = 'block';
+        }
+
+        function gameLoop(currentTime = 0) {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            if (gameState === 'playing') {
+                update(deltaTime);
+            }
+            render();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function update(deltaTime) {
+            gameTime += deltaTime;
+            score = Math.floor(gameTime * 100);
+            document.getElementById('scoreDisplay').textContent = score;
+
+            // --- MODIFIED: Difficulty Scaling ---
+            const speedMultiplier = 1 + score * SPEED_ACCELERATION;
+            const spawnMultiplier = 1 - Math.min(0.8, score * SPAWN_ACCELERATION); // Decrease interval
+            const currentShapeSpeed = BASE_SHAPE_SPEED * speedMultiplier;
+            const currentSpawnInterval = BASE_SPAWN_INTERVAL * spawnMultiplier;
+
+            // --- NEW: Hazard Unlocks ---
+            Object.keys(HAZARD_THRESHOLDS).forEach(key => {
+                if (score >= HAZARD_THRESHOLDS[key] && !unlockedHazards[key]) {
+                    unlockedHazards[key] = true;
+                    if (!hazardNotified[key]) {
+                        createBonusPopup(`${key.toUpperCase()} UNLOCKED!`);
+                        hazardNotified[key] = true;
+                    }
+                }
+            });
+
+            // --- NEW: Inversion Event Logic ---
+            if (score > lastInversionScore + INVERSION_INTERVAL) {
+                lastInversionScore = score;
+                inversionActive = true;
+                inversionTimer = INVERSION_DURATION;
+                triggerFlashAndInvert();
+                createBonusPopup("INVERSION!");
+            }
+            if (inversionActive) {
+                inversionTimer -= deltaTime;
+                if (inversionTimer <= 0) {
+                    inversionActive = false;
+                    document.getElementById('gameContainer').classList.remove('inversion-mode');
+                }
+            }
+            
+            // Update stars
+            stars.forEach(star => {
+                star.y += star.speed * speedMultiplier * deltaTime;
+                if (star.y > canvas.height) { star.y = -5; star.x = Math.random() * canvas.width; }
+            });
+
+            // Update player glow
+            player.glowIntensity = 0.4 + Math.sin(gameTime * 5) * 0.2;
+
+            // Spawn shapes
+            if (gameTime - lastSpawnTime > currentSpawnInterval) {
+                spawnShapeRow();
+                lastSpawnTime = gameTime;
+            }
+
+            // Update shapes
+            shapes.forEach((shape, index) => {
+                shape.y += currentShapeSpeed * deltaTime;
+                
+                // --- NEW: Handle Hazard movement ---
+                if(shape.type === 'drifter') {
+                    shape.x += shape.vx * deltaTime;
+                    if (shape.x < 0 || shape.x + shape.width > canvas.width) {
+                        shape.vx *= -1;
+                    }
+                }
+                if(shape.type === 'spinner') {
+                    shape.rotation += shape.rotationSpeed * deltaTime;
+                }
+                if(shape.type === 'phantom') {
+                    shape.phantomTimer -= deltaTime;
+                    if(shape.phantomTimer <= 0) {
+                        shape.phantomDirection *= -1;
+                        shape.phantomTimer = Math.random() * 1.5 + 0.5;
+                    }
+                    shape.alpha += shape.phantomDirection * deltaTime * 2;
+                    shape.alpha = Math.max(0.1, Math.min(1, shape.alpha));
+                }
+
+                if (shape.y > canvas.height + 50) {
+                    shapes.splice(index, 1);
+                }
+            });
+            particles.forEach((p, i) => { p.update(deltaTime); if(p.life <= 0) particles.splice(i, 1); });
+
+            checkCollisions();
+        }
+
+        // --- NEW: Creates a full row of shapes with gaps ---
+        function spawnShapeRow() {
+            const numBlocks = Math.floor(canvas.width / 50);
+            const gapCount = Math.floor(1 + score / 5000); // More gaps for higher scores
+            let blockArray = new Array(numBlocks).fill(1);
+            
+            for(let i=0; i<gapCount; i++){
+                let gapIndex = Math.floor(Math.random() * numBlocks);
+                blockArray[gapIndex] = 0; // Create a gap
+            }
+
+            blockArray.forEach((block, i) => {
+                if(block === 1) spawnShape(i * 50, 50);
+            });
+        }
+        
+        // --- MODIFIED: Spawns a single shape with potential hazards ---
+        function spawnShape(x, width) {
+            const shape = { x, y: -50, width, height: 20, type: 'normal',
+                rotation: 0, alpha: 1, // Default properties
+            };
+
+            const hazardRand = Math.random();
+            if (unlockedHazards.phantoms && hazardRand < 0.2) {
+                shape.type = 'phantom';
+                shape.phantomTimer = Math.random() * 1.5 + 0.5;
+                shape.phantomDirection = -1;
+            } else if (unlockedHazards.spinners && hazardRand < 0.4) {
+                shape.type = 'spinner';
+                shape.rotationSpeed = (Math.random() - 0.5) * 2;
+            } else if (unlockedHazards.drifters && hazardRand < 0.7) {
+                shape.type = 'drifter';
+                shape.vx = (Math.random() - 0.5) * 60;
+            }
+            shapes.push(shape);
+        }
+
+        function checkCollisions() {
+            for (let shape of shapes) {
+                const isColliding = player.x > shape.x && player.x < shape.x + shape.width &&
+                                    player.y > shape.y && player.y < shape.y + shape.height;
+                if (isColliding) {
+                    gameOver(); return;
+                }
+            }
+        }
+
+        function gameOver() {
+            gameState = 'gameOver';
+            triggerFlash();
+            createShatterEffect();
+            setTimeout(() => {
+                document.getElementById('finalScore').textContent = `Score: ${score}`;
+                document.getElementById('gameOverModal').classList.add('active');
+                document.getElementById('playerInitials').focus();
+            }, 500);
+        }
+
+        function triggerFlash() {
+            const flash = document.getElementById('flashEffect');
+            flash.style.transition = 'opacity 0.05s ease-out';
+            flash.style.opacity = '1';
+            setTimeout(() => { flash.style.opacity = '0'; }, 50);
+        }
+
+        function triggerFlashAndInvert(){
+            const flash = document.getElementById('flashEffect');
+            flash.style.transition = 'opacity 0.2s ease-out';
+            flash.style.opacity = '1';
+            setTimeout(() => { 
+                document.getElementById('gameContainer').classList.toggle('inversion-mode');
+                flash.style.opacity = '0';
+            }, 200);
+        }
+        
+        function createShatterEffect() {
+            for (let i = 0; i < 30; i++) {
+                particles.push(new Particle(player.x, player.y));
+            }
+        }
+        
+        function createBonusPopup(text) {
+            const popup = document.createElement('div');
+            popup.className = 'bonus-popup';
+            popup.textContent = text;
+            popup.style.color = inversionActive ? '#000000' : '#FFFFFF';
+            document.getElementById('gameContainer').appendChild(popup);
+            setTimeout(() => popup.remove(), 2000);
+        }
+        
+        class Particle {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 150 + 50;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = Math.random() * 1 + 0.5;
+                this.maxLife = this.life;
+                this.size = Math.random() * 3 + 1;
+            }
+            update(deltaTime) {
+                this.x += this.vx * deltaTime;
+                this.y += this.vy * deltaTime;
+                this.life -= deltaTime;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = this.life / this.maxLife;
+                const color = document.getElementById('gameContainer').classList.contains('inversion-mode') ? '#000000' : '#FFFFFF';
+                ctx.fillStyle = color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        function render() {
+            const bgColor = inversionActive ? '#FFFFFF' : '#000000';
+            const fgColor = inversionActive ? '#000000' : '#FFFFFF';
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Render stars
+            ctx.fillStyle = fgColor;
+            stars.forEach(star => {
+                ctx.globalAlpha = 0.6;
+                ctx.fillRect(star.x - star.size / 2, star.y - star.size / 2, star.size, star.size);
+            });
+            ctx.globalAlpha = 1;
+
+            // Render shapes
+            shapes.forEach(shape => {
+                ctx.save();
+                ctx.translate(shape.x + shape.width / 2, shape.y + shape.height / 2);
+                ctx.rotate(shape.rotation);
+                ctx.fillStyle = fgColor;
+                ctx.globalAlpha = shape.alpha;
+                ctx.fillRect(-shape.width / 2, -shape.height / 2, shape.width, shape.height);
+                ctx.restore();
+            });
+            ctx.globalAlpha = 1;
+
+            // Render particles
+            particles.forEach(p => p.draw(ctx));
+
+            // Render player
+            if (gameState === 'playing') {
+                const gradient = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, player.glowRadius);
+                gradient.addColorStop(0, `rgba(${inversionActive ? '0,0,0' : '255,255,255'}, ${player.glowIntensity})`);
+                gradient.addColorStop(1, `rgba(${inversionActive ? '0,0,0' : '255,255,255'}, 0)`);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(player.x - player.glowRadius, player.y - player.glowRadius, player.glowRadius * 2, player.glowRadius * 2);
+                
+                ctx.fillStyle = fgColor;
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // --- UI & Local Storage Functions (Simplified) ---
+        function hideAllScreens() {
+            document.querySelectorAll('.screen, .modal').forEach(el => el.classList.remove('active'));
+            document.getElementById('scoreDisplay').style.display = 'none';
+        }
+        function backToMenu() {
+            gameState = 'menu';
+            hideAllScreens();
+            document.getElementById('mainMenu').classList.add('active');
+        }
+        function showLeaderboard() {
+            hideAllScreens();
+            document.getElementById('leaderboardScreen').classList.add('active');
+            loadLeaderboard();
+        }
+        function initializeLocalStorage() {
+            if (!localStorage.getItem('negativeSpaceScores')) {
+                localStorage.setItem('negativeSpaceScores', JSON.stringify([]));
+            }
+        }
+        function submitScore() {
+            const initials = document.getElementById('playerInitials').value || 'AAA';
+            const scores = JSON.parse(localStorage.getItem('negativeSpaceScores') || '[]');
+            scores.push({ initials, score });
+            scores.sort((a, b) => b.score - a.score);
+            localStorage.setItem('negativeSpaceScores', JSON.stringify(scores.slice(0, 10)));
+            showLeaderboard();
+        }
+        function loadLeaderboard() {
+            const scores = JSON.parse(localStorage.getItem('negativeSpaceScores') || '[]');
+            const container = document.getElementById('leaderboardEntries');
+            container.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const scoreData = scores[i] || { initials: '---', score: 0 };
+                const row = document.createElement('div');
+                row.className = 'leaderboard-row';
+                row.innerHTML = `<div>${i + 1}</div><div>${scoreData.initials}</div><div>${scoreData.score}</div>`;
+                container.appendChild(row);
+            }
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.getElementById('gameOverModal').classList.contains('active')) {
+                submitScore();
+            }
+        });
+
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
