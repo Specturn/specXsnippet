@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Persona Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .palette-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .palette-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .palette-card.selected {
+            border: 2px solid #667eea;
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .palette-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .palette-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .color-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .palette-card:hover .color-circle {
+            transform: scale(1.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .floating-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .customer-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .customer-card.selected {
+            border: 2px solid #667eea;
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .customer-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .customer-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .brand-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .brand-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .step.completed {
+            background: #10b981;
+            color: white;
+        }
+
+        .step-line {
+            width: 60px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .step-line.completed {
+            background: #10b981;
+        }
+
+        .nav-button {
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-button.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .nav-button.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 25px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .brand-guide-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 25px 25px 0 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-guide-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+            position: relative;
+        }
+
+        .section-icon {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 0 0 25px 25px;
+        }
+
+        .download-btn {
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .download-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .download-btn.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-preview {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="glass-card border-0 border-b border-white/20 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-6">
+            <div class="flex items-center justify-center mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center floating-icon mr-4">
+                    <i class="fas fa-palette text-white text-xl"></i>
+                </div>
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold gradient-text">Brand Persona Builder</h1>
+                    <p class="text-gray-600">Discover your perfect brand identity</p>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="max-w-md mx-auto">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 25%;"></div>
+                </div>
+                <div class="text-center mt-2 text-sm text-gray-600">
+                    Step <span id="currentStep">1</span> of 4
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-6 py-12">
+        
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step active" id="step1">1</div>
+            <div class="step-line" id="line1"></div>
+            <div class="step" id="step2">2</div>
+            <div class="step-line" id="line2"></div>
+            <div class="step" id="step3">3</div>
+            <div class="step-line" id="line3"></div>
+            <div class="step" id="step4">4</div>
+        </div>
+
+        <!-- Page 1: Business Details -->
+        <div class="page active" id="page1">
+            <div class="glass-card rounded-3xl p-8 mb-8">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-building text-4xl text-blue-600"></i>
+                    </div>
+                    <h2 class="text-4xl font-bold text-gray-800 mb-4">Tell us about your business</h2>
+                    <p class="text-xl text-gray-600">Let's start with the basics to understand your brand</p>
+                </div>
+                
+                <div class="max-w-3xl mx-auto space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Business Name *</label>
+                            <input type="text" id="businessName" placeholder="Enter your business name" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                   onchange="updateBusinessDetails()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Industry *</label>
+                            <select id="businessIndustry" onchange="updateBusinessDetails()" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                <option value="">Select your industry</option>
+                                <option value="technology">Technology</option>
+                                <option value="healthcare">Healthcare</option>
+                                <option value="finance">Finance</option>
+                                <option value="retail">Retail</option>
+                                <option value="food">Food & Beverage</option>
+                                <option value="education">Education</option>
+                                <option value="real-estate">Real Estate</option>
+                                <option value="consulting">Consulting</option>
+                                <option value="creative">Creative Services</option>
+                                <option value="fitness">Fitness & Wellness</option>
+                                <option value="travel">Travel & Tourism</option>
+                                <option value="automotive">Automotive</option>
+                                <option value="fashion">Fashion & Beauty</option>
+                                <option value="nonprofit">Non-Profit</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Business Description</label>
+                        <textarea id="businessDescription" rows="4" placeholder="Describe what your business does, your mission, and what makes you unique..." 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                  onchange="updateBusinessDetails()"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Business Stage</label>
+                            <select id="businessStage" onchange="updateBusinessDetails()" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                <option value="">Select stage</option>
+                                <option value="startup">Startup (0-2 years)</option>
+                                <option value="growing">Growing (2-5 years)</option>
+                                <option value="established">Established (5+ years)</option>
+                                <option value="rebranding">Rebranding</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Company Size</label>
+                            <select id="companySize" onchange="updateBusinessDetails()" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                <option value="">Select size</option>
+                                <option value="solo">Solo/Freelancer</option>
+                                <option value="small">Small (2-10 employees)</option>
+                                <option value="medium">Medium (11-50 employees)</option>
+                                <option value="large">Large (50+ employees)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Location</label>
+                            <input type="text" id="businessLocation" placeholder="City, Country" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                   onchange="updateBusinessDetails()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button onclick="nextPage()" id="nextBtn1" class="nav-button primary" disabled>
+                    Next: Choose Your Customer
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Page 2: Ideal Customer -->
+        <div class="page" id="page2">
+            <div class="glass-card rounded-3xl p-8 mb-8">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-green-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-users text-4xl text-green-600"></i>
+                    </div>
+                    <h2 class="text-4xl font-bold text-gray-800 mb-4">Who is your ideal customer?</h2>
+                    <p class="text-xl text-gray-600">Understanding your audience is key to effective branding</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                    <div class="customer-card p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer" onclick="selectCustomer(this, 'business')">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-briefcase text-blue-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Business Professionals</h4>
+                            <p class="text-gray-600 text-sm">Corporate executives, entrepreneurs, consultants</p>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-card p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer" onclick="selectCustomer(this, 'families')">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-users text-green-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Young Families</h4>
+                            <p class="text-gray-600 text-sm">Parents with children, family-oriented consumers</p>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-card p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer" onclick="selectCustomer(this, 'students')">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-graduation-cap text-purple-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Students & Young Adults</h4>
+                            <p class="text-gray-600 text-sm">College students, recent graduates, millennials</p>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-card p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer" onclick="selectCustomer(this, 'wellness')">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-heart text-orange-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Health & Wellness Enthusiasts</h4>
+                            <p class="text-gray-600 text-sm">Fitness lovers, wellness seekers, health-conscious</p>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-card p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer" onclick="selectCustomer(this, 'creative')">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-paint-brush text-pink-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Creative Professionals</h4>
+                            <p class="text-gray-600 text-sm">Artists, designers, writers, creative freelancers</p>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-card p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer" onclick="selectCustomer(this, 'tech')">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-laptop text-indigo-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Tech Enthusiasts</h4>
+                            <p class="text-gray-600 text-sm">Early adopters, tech professionals, digital natives</p>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-card p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer" onclick="selectCustomer(this, 'food')">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-utensils text-red-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Food Lovers</h4>
+                            <p class="text-gray-600 text-sm">Restaurant diners, food enthusiasts, culinary adventurers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between">
+                <button onclick="prevPage()" class="nav-button secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+                <button onclick="nextPage()" id="nextBtn2" class="nav-button primary" disabled>
+                    Next: Choose Visual Style
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Page 3: Visual Identity -->
+        <div class="page" id="page3">
+            <div class="glass-card rounded-3xl p-8 mb-8">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-palette text-4xl text-purple-600"></i>
+                    </div>
+                    <h2 class="text-4xl font-bold text-gray-800 mb-4">Choose Your Visual Identity</h2>
+                    <p class="text-xl text-gray-600">Select the color palette that best represents your brand</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                    
+                    <!-- Color Palettes -->
+                    <div class="palette-card" onclick="selectPalette(this, 'earthy')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #8B7355;"></div>
+                            <div class="color-circle" style="background: #A0956B;"></div>
+                            <div class="color-circle" style="background: #6B8E23;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Earthy & Natural</h4>
+                        <p class="text-gray-600 text-sm text-center">Organic, sustainable, grounded</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'minimal')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #2C3E50;"></div>
+                            <div class="color-circle" style="background: #95A5A6;"></div>
+                            <div class="color-circle" style="background: #ECF0F1;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Minimal & Sleek</h4>
+                        <p class="text-gray-600 text-sm text-center">Clean, modern, sophisticated</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'vibrant')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #E74C3C;"></div>
+                            <div class="color-circle" style="background: #F39C12;"></div>
+                            <div class="color-circle" style="background: #9B59B6;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Vibrant & Bold</h4>
+                        <p class="text-gray-600 text-sm text-center">Energetic, confident, dynamic</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'luxury')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #1A1A1A;"></div>
+                            <div class="color-circle" style="background: #D4AF37;"></div>
+                            <div class="color-circle" style="background: #F8F8FF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Luxury & Premium</h4>
+                        <p class="text-gray-600 text-sm text-center">Exclusive, elegant, high-end</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'retro')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FF6B6B;"></div>
+                            <div class="color-circle" style="background: #4ECDC4;"></div>
+                            <div class="color-circle" style="background: #FFE66D;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Retro & Playful</h4>
+                        <p class="text-gray-600 text-sm text-center">Nostalgic, fun, creative</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'calm')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #87CEEB;"></div>
+                            <div class="color-circle" style="background: #B0E0E6;"></div>
+                            <div class="color-circle" style="background: #E0F6FF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Calm & Cool</h4>
+                        <p class="text-gray-600 text-sm text-center">Relaxed, soothing, gentle</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'industrial')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #2F4F4F;"></div>
+                            <div class="color-circle" style="background: #708090;"></div>
+                            <div class="color-circle" style="background: #CD853F;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Industrial & Strong</h4>
+                        <p class="text-gray-600 text-sm text-center">Bold, sturdy, professional</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'fresh')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #32CD32;"></div>
+                            <div class="color-circle" style="background: #98FB98;"></div>
+                            <div class="color-circle" style="background: #F0FFF0;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Fresh & Energetic</h4>
+                        <p class="text-gray-600 text-sm text-center">Vibrant, healthy, dynamic</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'romantic')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FFB6C1;"></div>
+                            <div class="color-circle" style="background: #FFC0CB;"></div>
+                            <div class="color-circle" style="background: #FFEBEF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Romantic & Soft</h4>
+                        <p class="text-gray-600 text-sm text-center">Gentle, warm, inviting</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'artistic')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #8A2BE2;"></div>
+                            <div class="color-circle" style="background: #FF1493;"></div>
+                            <div class="color-circle" style="background: #FF8C00;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Creative & Artistic</h4>
+                        <p class="text-gray-600 text-sm text-center">Imaginative, unique, expressive</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'tech')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #00CED1;"></div>
+                            <div class="color-circle" style="background: #4169E1;"></div>
+                            <div class="color-circle" style="background: #E6F3FF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Tech & Digital</h4>
+                        <p class="text-gray-600 text-sm text-center">Modern, innovative, smart</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'warm')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FF7F50;"></div>
+                            <div class="color-circle" style="background: #FFA07A;"></div>
+                            <div class="color-circle" style="background: #FFEFD5;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Warm & Welcoming</h4>
+                        <p class="text-gray-600 text-sm text-center">Friendly, approachable, cozy</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'ocean')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #006994;"></div>
+                            <div class="color-circle" style="background: #13A8A8;"></div>
+                            <div class="color-circle" style="background: #B7E4C7;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Ocean Depths</h4>
+                        <p class="text-gray-600 text-sm text-center">Deep, trustworthy, flowing</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'sunset')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FF6B35;"></div>
+                            <div class="color-circle" style="background: #F7931E;"></div>
+                            <div class="color-circle" style="background: #FFD23F;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Sunset Glow</h4>
+                        <p class="text-gray-600 text-sm text-center">Warm, inspiring, energetic</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'forest')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #2D5016;"></div>
+                            <div class="color-circle" style="background: #61A5C2;"></div>
+                            <div class="color-circle" style="background: #A9DEF9;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Forest & Sky</h4>
+                        <p class="text-gray-600 text-sm text-center">Natural, balanced, peaceful</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'royal')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #4B0082;"></div>
+                            <div class="color-circle" style="background: #8B008B;"></div>
+                            <div class="color-circle" style="background: #FFD700;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Royal Purple</h4>
+                        <p class="text-gray-600 text-sm text-center">Regal, sophisticated, luxurious</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'coral')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FF7F7F;"></div>
+                            <div class="color-circle" style="background: #FFBF9B;"></div>
+                            <div class="color-circle" style="background: #FFE5CC;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Coral Reef</h4>
+                        <p class="text-gray-600 text-sm text-center">Vibrant, tropical, lively</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'midnight')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #191970;"></div>
+                            <div class="color-circle" style="background: #4169E1;"></div>
+                            <div class="color-circle" style="background: #87CEEB;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Midnight Blue</h4>
+                        <p class="text-gray-600 text-sm text-center">Deep, mysterious, professional</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'autumn')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #8B4513;"></div>
+                            <div class="color-circle" style="background: #CD853F;"></div>
+                            <div class="color-circle" style="background: #DEB887;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Autumn Leaves</h4>
+                        <p class="text-gray-600 text-sm text-center">Warm, cozy, traditional</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'mint')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #00FA9A;"></div>
+                            <div class="color-circle" style="background: #98FB98;"></div>
+                            <div class="color-circle" style="background: #F0FFF0;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Mint Fresh</h4>
+                        <p class="text-gray-600 text-sm text-center">Clean, refreshing, modern</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'lavender')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #E6E6FA;"></div>
+                            <div class="color-circle" style="background: #DDA0DD;"></div>
+                            <div class="color-circle" style="background: #9370DB;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Lavender Dreams</h4>
+                        <p class="text-gray-600 text-sm text-center">Soft, calming, elegant</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'citrus')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FFA500;"></div>
+                            <div class="color-circle" style="background: #FFFF00;"></div>
+                            <div class="color-circle" style="background: #32CD32;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Citrus Burst</h4>
+                        <p class="text-gray-600 text-sm text-center">Energetic, fresh, zesty</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'monochrome')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #000000;"></div>
+                            <div class="color-circle" style="background: #808080;"></div>
+                            <div class="color-circle" style="background: #FFFFFF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Classic Monochrome</h4>
+                        <p class="text-gray-600 text-sm text-center">Timeless, bold, striking</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'cherry')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #DC143C;"></div>
+                            <div class="color-circle" style="background: #FF69B4;"></div>
+                            <div class="color-circle" style="background: #FFB6C1;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Cherry Blossom</h4>
+                        <p class="text-gray-600 text-sm text-center">Romantic, delicate, charming</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'emerald')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #50C878;"></div>
+                            <div class="color-circle" style="background: #90EE90;"></div>
+                            <div class="color-circle" style="background: #F0FFF0;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Emerald Garden</h4>
+                        <p class="text-gray-600 text-sm text-center">Rich, natural, prosperous</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'bronze')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #CD7F32;"></div>
+                            <div class="color-circle" style="background: #D2691E;"></div>
+                            <div class="color-circle" style="background: #F4A460;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Bronze Age</h4>
+                        <p class="text-gray-600 text-sm text-center">Earthy, strong, reliable</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'arctic')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #B0E0E6;"></div>
+                            <div class="color-circle" style="background: #E0FFFF;"></div>
+                            <div class="color-circle" style="background: #F0F8FF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Arctic Ice</h4>
+                        <p class="text-gray-600 text-sm text-center">Cool, pure, serene</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'wine')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #722F37;"></div>
+                            <div class="color-circle" style="background: #C21807;"></div>
+                            <div class="color-circle" style="background: #F8D7DA;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Wine & Roses</h4>
+                        <p class="text-gray-600 text-sm text-center">Sophisticated, mature, elegant</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'tropical')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FF6347;"></div>
+                            <div class="color-circle" style="background: #40E0D0;"></div>
+                            <div class="color-circle" style="background: #FFFFE0;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Tropical Paradise</h4>
+                        <p class="text-gray-600 text-sm text-center">Exotic, vibrant, adventurous</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'sage')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #9CAF88;"></div>
+                            <div class="color-circle" style="background: #BCB88A;"></div>
+                            <div class="color-circle" style="background: #F4F3EE;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Sage Wisdom</h4>
+                        <p class="text-gray-600 text-sm text-center">Calm, wise, grounded</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'neon')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FF073A;"></div>
+                            <div class="color-circle" style="background: #39FF14;"></div>
+                            <div class="color-circle" style="background: #00FFFF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Neon Lights</h4>
+                        <p class="text-gray-600 text-sm text-center">Electric, modern, bold</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'desert')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #C19A6B;"></div>
+                            <div class="color-circle" style="background: #EDC9AF;"></div>
+                            <div class="color-circle" style="background: #F5DEB3;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Desert Sand</h4>
+                        <p class="text-gray-600 text-sm text-center">Warm, neutral, timeless</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'galaxy')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #483D8B;"></div>
+                            <div class="color-circle" style="background: #9370DB;"></div>
+                            <div class="color-circle" style="background: #E6E6FA;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Galaxy Dreams</h4>
+                        <p class="text-gray-600 text-sm text-center">Cosmic, mysterious, infinite</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'peach')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FFCBA4;"></div>
+                            <div class="color-circle" style="background: #FFE5B4;"></div>
+                            <div class="color-circle" style="background: #FFF8DC;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Peach Cream</h4>
+                        <p class="text-gray-600 text-sm text-center">Soft, gentle, nurturing</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'steel')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #4682B4;"></div>
+                            <div class="color-circle" style="background: #708090;"></div>
+                            <div class="color-circle" style="background: #C0C0C0;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Steel Blue</h4>
+                        <p class="text-gray-600 text-sm text-center">Strong, reliable, modern</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'sunrise')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #FF4500;"></div>
+                            <div class="color-circle" style="background: #FFD700;"></div>
+                            <div class="color-circle" style="background: #FFFACD;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Golden Sunrise</h4>
+                        <p class="text-gray-600 text-sm text-center">Optimistic, bright, hopeful</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'jade')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #00A86B;"></div>
+                            <div class="color-circle" style="background: #7FFFD4;"></div>
+                            <div class="color-circle" style="background: #F0FFFF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Jade Waters</h4>
+                        <p class="text-gray-600 text-sm text-center">Precious, balanced, healing</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'plum')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #8E4585;"></div>
+                            <div class="color-circle" style="background: #DDA0DD;"></div>
+                            <div class="color-circle" style="background: #F8F8FF;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Plum Elegance</h4>
+                        <p class="text-gray-600 text-sm text-center">Rich, sophisticated, refined</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'copper')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #B87333;"></div>
+                            <div class="color-circle" style="background: #CD853F;"></div>
+                            <div class="color-circle" style="background: #F5DEB3;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Copper Glow</h4>
+                        <p class="text-gray-600 text-sm text-center">Warm, metallic, artisanal</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'storm')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #2F4F4F;"></div>
+                            <div class="color-circle" style="background: #696969;"></div>
+                            <div class="color-circle" style="background: #D3D3D3;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Storm Clouds</h4>
+                        <p class="text-gray-600 text-sm text-center">Dramatic, powerful, intense</p>
+                    </div>
+
+                    <div class="palette-card" onclick="selectPalette(this, 'vanilla')">
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <div class="color-circle" style="background: #F3E5AB;"></div>
+                            <div class="color-circle" style="background: #FFF8DC;"></div>
+                            <div class="color-circle" style="background: #FFFEF7;"></div>
+                        </div>
+                        <h4 class="font-bold text-lg text-gray-800 text-center mb-2">Vanilla Cream</h4>
+                        <p class="text-gray-600 text-sm text-center">Sweet, comforting, classic</p>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div class="flex justify-between">
+                <button onclick="prevPage()" class="nav-button secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+                <button onclick="nextPage()" id="nextBtn3" class="nav-button primary" disabled>
+                    See Your Brand Identity
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Page 4: Results -->
+        <div class="page" id="page4">
+            <div class="glass-card rounded-3xl p-8 mb-8">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-star text-4xl text-yellow-600"></i>
+                    </div>
+                    <h2 class="text-4xl font-bold text-gray-800 mb-4">Your Brand Identity</h2>
+                    <p class="text-xl text-gray-600">Here's your personalized brand recommendation</p>
+                </div>
+                
+                <div id="results" class="space-y-6 mb-8">
+                    <!-- Results will be populated here -->
+                </div>
+                
+                <div class="text-center">
+                    <button onclick="generateBrandGuide()" class="nav-button primary text-lg px-12 py-4">
+                        <i class="fas fa-magic mr-2"></i>
+                        Generate Full Brand Guide
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex justify-between">
+                <button onclick="prevPage()" class="nav-button secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+                <button onclick="startOver()" class="nav-button secondary">
+                    <i class="fas fa-redo"></i>
+                    Start Over
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let selectedCustomer = null;
+        let selectedPalette = null;
+        let businessDetails = {
+            name: '',
+            industry: '',
+            description: '',
+            stage: '',
+            size: '',
+            location: ''
+        };
+
+        const paletteColors = {
+            'earthy': ['#8B7355', '#A0956B', '#6B8E23'],
+            'minimal': ['#2C3E50', '#95A5A6', '#ECF0F1'],
+            'vibrant': ['#E74C3C', '#F39C12', '#9B59B6'],
+            'luxury': ['#1A1A1A', '#D4AF37', '#F8F8FF'],
+            'retro': ['#FF6B6B', '#4ECDC4', '#FFE66D'],
+            'calm': ['#87CEEB', '#B0E0E6', '#E0F6FF'],
+            'industrial': ['#2F4F4F', '#708090', '#CD853F'],
+            'fresh': ['#32CD32', '#98FB98', '#F0FFF0'],
+            'romantic': ['#FFB6C1', '#FFC0CB', '#FFEBEF'],
+            'artistic': ['#8A2BE2', '#FF1493', '#FF8C00'],
+            'tech': ['#00CED1', '#4169E1', '#E6F3FF'],
+            'warm': ['#FF7F50', '#FFA07A', '#FFEFD5'],
+            'ocean': ['#006994', '#13A8A8', '#B7E4C7'],
+            'sunset': ['#FF6B35', '#F7931E', '#FFD23F'],
+            'forest': ['#2D5016', '#61A5C2', '#A9DEF9'],
+            'royal': ['#4B0082', '#8B008B', '#FFD700'],
+            'coral': ['#FF7F7F', '#FFBF9B', '#FFE5CC'],
+            'midnight': ['#191970', '#4169E1', '#87CEEB'],
+            'autumn': ['#8B4513', '#CD853F', '#DEB887'],
+            'mint': ['#00FA9A', '#98FB98', '#F0FFF0'],
+            'lavender': ['#E6E6FA', '#DDA0DD', '#9370DB'],
+            'citrus': ['#FFA500', '#FFFF00', '#32CD32'],
+            'monochrome': ['#000000', '#808080', '#FFFFFF'],
+            'cherry': ['#DC143C', '#FF69B4', '#FFB6C1'],
+            'emerald': ['#50C878', '#90EE90', '#F0FFF0'],
+            'bronze': ['#CD7F32', '#D2691E', '#F4A460'],
+            'arctic': ['#B0E0E6', '#E0FFFF', '#F0F8FF'],
+            'wine': ['#722F37', '#C21807', '#F8D7DA'],
+            'tropical': ['#FF6347', '#40E0D0', '#FFFFE0'],
+            'sage': ['#9CAF88', '#BCB88A', '#F4F3EE'],
+            'neon': ['#FF073A', '#39FF14', '#00FFFF'],
+            'desert': ['#C19A6B', '#EDC9AF', '#F5DEB3'],
+            'galaxy': ['#483D8B', '#9370DB', '#E6E6FA'],
+            'peach': ['#FFCBA4', '#FFE5B4', '#FFF8DC'],
+            'steel': ['#4682B4', '#708090', '#C0C0C0'],
+            'sunrise': ['#FF4500', '#FFD700', '#FFFACD'],
+            'jade': ['#00A86B', '#7FFFD4', '#F0FFFF'],
+            'plum': ['#8E4585', '#DDA0DD', '#F8F8FF'],
+            'copper': ['#B87333', '#CD853F', '#F5DEB3'],
+            'storm': ['#2F4F4F', '#696969', '#D3D3D3'],
+            'vanilla': ['#F3E5AB', '#FFF8DC', '#FFFEF7']
+        };
+
+        function updateBusinessDetails() {
+            businessDetails.name = document.getElementById('businessName').value;
+            businessDetails.industry = document.getElementById('businessIndustry').value;
+            businessDetails.description = document.getElementById('businessDescription').value;
+            businessDetails.stage = document.getElementById('businessStage').value;
+            businessDetails.size = document.getElementById('companySize').value;
+            businessDetails.location = document.getElementById('businessLocation').value;
+            
+            // Enable next button if required fields are filled
+            const nextBtn = document.getElementById('nextBtn1');
+            if (businessDetails.name && businessDetails.industry) {
+                nextBtn.disabled = false;
+            } else {
+                nextBtn.disabled = true;
+            }
+        }
+
+        function selectCustomer(element, customerId) {
+            // Remove selection from all customer cards
+            document.querySelectorAll('.customer-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked card
+            element.classList.add('selected');
+            selectedCustomer = customerId;
+            
+            // Enable next button
+            document.getElementById('nextBtn2').disabled = false;
+        }
+
+        function selectPalette(element, paletteId) {
+            // Remove selection from all palette cards
+            document.querySelectorAll('.palette-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked card
+            element.classList.add('selected');
+            selectedPalette = paletteId;
+            
+            // Enable next button
+            document.getElementById('nextBtn3').disabled = false;
+        }
+
+        function nextPage() {
+            if (currentPage < 4) {
+                // Hide current page
+                document.getElementById(`page${currentPage}`).classList.remove('active');
+                
+                // Update step indicators
+                document.getElementById(`step${currentPage}`).classList.remove('active');
+                document.getElementById(`step${currentPage}`).classList.add('completed');
+                if (currentPage < 4) {
+                    document.getElementById(`line${currentPage}`).classList.add('completed');
+                }
+                
+                currentPage++;
+                
+                // Show next page
+                document.getElementById(`page${currentPage}`).classList.add('active');
+                document.getElementById(`step${currentPage}`).classList.add('active');
+                
+                // Update progress
+                updateProgress();
+                
+                // If we're on the results page, generate results
+                if (currentPage === 4) {
+                    generateResults();
+                }
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                // Hide current page
+                document.getElementById(`page${currentPage}`).classList.remove('active');
+                document.getElementById(`step${currentPage}`).classList.remove('active');
+                
+                currentPage--;
+                
+                // Show previous page
+                document.getElementById(`page${currentPage}`).classList.add('active');
+                
+                // Update step indicators
+                document.getElementById(`step${currentPage}`).classList.remove('completed');
+                document.getElementById(`step${currentPage}`).classList.add('active');
+                if (currentPage < 4) {
+                    document.getElementById(`line${currentPage}`).classList.remove('completed');
+                }
+                
+                // Update progress
+                updateProgress();
+            }
+        }
+
+        function updateProgress() {
+            const progress = (currentPage / 4) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('currentStep').textContent = currentPage;
+        }
+
+        function generateResults() {
+            const resultsDiv = document.getElementById('results');
+            
+            const customerNames = {
+                'business': 'Business Professionals',
+                'families': 'Young Families',
+                'students': 'Students & Young Adults',
+                'wellness': 'Health & Wellness Enthusiasts',
+                'creative': 'Creative Professionals',
+                'tech': 'Tech Enthusiasts',
+                'food': 'Food Lovers'
+            };
+            
+            const paletteNames = {
+                'earthy': 'Earthy & Natural',
+                'minimal': 'Minimal & Sleek',
+                'vibrant': 'Vibrant & Bold',
+                'luxury': 'Luxury & Premium',
+                'retro': 'Retro & Playful',
+                'calm': 'Calm & Cool',
+                'industrial': 'Industrial & Strong',
+                'fresh': 'Fresh & Energetic',
+                'romantic': 'Romantic & Soft',
+                'artistic': 'Creative & Artistic',
+                'tech': 'Tech & Digital',
+                'warm': 'Warm & Welcoming',
+                'ocean': 'Ocean Depths',
+                'sunset': 'Sunset Glow',
+                'forest': 'Forest & Sky',
+                'royal': 'Royal Purple',
+                'coral': 'Coral Reef',
+                'midnight': 'Midnight Blue',
+                'autumn': 'Autumn Leaves',
+                'mint': 'Mint Fresh',
+                'lavender': 'Lavender Dreams',
+                'citrus': 'Citrus Burst',
+                'monochrome': 'Classic Monochrome',
+                'cherry': 'Cherry Blossom',
+                'emerald': 'Emerald Garden',
+                'bronze': 'Bronze Age',
+                'arctic': 'Arctic Ice',
+                'wine': 'Wine & Roses',
+                'tropical': 'Tropical Paradise',
+                'sage': 'Sage Wisdom',
+                'neon': 'Neon Lights',
+                'desert': 'Desert Sand',
+                'galaxy': 'Galaxy Dreams',
+                'peach': 'Peach Cream',
+                'steel': 'Steel Blue',
+                'sunrise': 'Golden Sunrise',
+                'jade': 'Jade Waters',
+                'plum': 'Plum Elegance',
+                'copper': 'Copper Glow',
+                'storm': 'Storm Clouds',
+                'vanilla': 'Vanilla Cream'
+            };
+            
+            let content = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+            
+            // Business Card
+            content += `
+                <div class="brand-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-building text-white text-2xl"></i>
+                    </div>
+                    <h4 class="font-bold text-xl mb-4 text-center">Your Business</h4>
+                    ${businessDetails.name ? `<p class="text-lg mb-2 text-center"><strong>${businessDetails.name}</strong></p>` : ''}
+                    ${businessDetails.industry ? `<p class="mb-2 opacity-90">Industry: ${businessDetails.industry.charAt(0).toUpperCase() + businessDetails.industry.slice(1)}</p>` : ''}
+                    ${businessDetails.stage ? `<p class="mb-2 opacity-90">Stage: ${businessDetails.stage.charAt(0).toUpperCase() + businessDetails.stage.slice(1)}</p>` : ''}
+                    ${businessDetails.size ? `<p class="mb-2 opacity-90">Size: ${businessDetails.size.charAt(0).toUpperCase() + businessDetails.size.slice(1)}</p>` : ''}
+                    ${businessDetails.location ? `<p class="mb-2 opacity-90">Location: ${businessDetails.location}</p>` : ''}
+                    ${businessDetails.description ? `<p class="mt-3 italic opacity-90">"${businessDetails.description}"</p>` : ''}
+                </div>
+            `;
+            
+            // Customer Card
+            content += `
+                <div class="brand-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users text-white text-2xl"></i>
+                    </div>
+                    <h4 class="font-bold text-xl mb-4 text-center">Target Audience</h4>
+                    <p class="text-lg mb-4 text-center">${customerNames[selectedCustomer]}</p>
+                    <p class="opacity-90 text-center">Perfect! This audience alignment will help create focused marketing strategies.</p>
+                </div>
+            `;
+            
+            // Palette Card
+            const colors = paletteColors[selectedPalette] || ['#667eea', '#764ba2', '#f8fafc'];
+            content += `
+                <div class="brand-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-palette text-white text-2xl"></i>
+                    </div>
+                    <h4 class="font-bold text-xl mb-4 text-center">Visual Style</h4>
+                    <p class="text-lg mb-4 text-center">${paletteNames[selectedPalette]}</p>
+                    <div class="flex justify-center space-x-2 mb-4">
+                        ${colors.map(color => `<div class="w-8 h-8 rounded-full border-2 border-white/50" style="background: ${color};"></div>`).join('')}
+                    </div>
+                    <p class="opacity-90 text-center">Excellent choice! This palette will create a cohesive brand identity.</p>
+                </div>
+            `;
+            
+            content += '</div>';
+            resultsDiv.innerHTML = content;
+        }
+
+        function startOver() {
+            currentPage = 1;
+            selectedCustomer = null;
+            selectedPalette = null;
+            businessDetails = {
+                name: '',
+                industry: '',
+                description: '',
+                stage: '',
+                size: '',
+                location: ''
+            };
+            
+            // Reset form fields
+            document.getElementById('businessName').value = '';
+            document.getElementById('businessIndustry').value = '';
+            document.getElementById('businessDescription').value = '';
+            document.getElementById('businessStage').value = '';
+            document.getElementById('companySize').value = '';
+            document.getElementById('businessLocation').value = '';
+            
+            // Reset selections
+            document.querySelectorAll('.customer-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelectorAll('.palette-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Reset pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById('page1').classList.add('active');
+            
+            // Reset steps
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active', 'completed');
+            });
+            document.querySelectorAll('.step-line').forEach(line => {
+                line.classList.remove('completed');
+            });
+            document.getElementById('step1').classList.add('active');
+            
+            // Reset buttons
+            document.getElementById('nextBtn1').disabled = true;
+            document.getElementById('nextBtn2').disabled = true;
+            document.getElementById('nextBtn3').disabled = true;
+            
+            updateProgress();
+        }
+
+        function generateBrandGuide() {
+            showBrandGuideModal();
+        }
+
+        function showBrandGuideModal() {
+            const customerNames = {
+                'business': 'Business Professionals',
+                'families': 'Young Families',
+                'students': 'Students & Young Adults',
+                'wellness': 'Health & Wellness Enthusiasts',
+                'creative': 'Creative Professionals',
+                'tech': 'Tech Enthusiasts',
+                'food': 'Food Lovers'
+            };
+            
+            const paletteNames = {
+                'earthy': 'Earthy & Natural',
+                'minimal': 'Minimal & Sleek',
+                'vibrant': 'Vibrant & Bold',
+                'luxury': 'Luxury & Premium',
+                'retro': 'Retro & Playful',
+                'calm': 'Calm & Cool',
+                'industrial': 'Industrial & Strong',
+                'fresh': 'Fresh & Energetic',
+                'romantic': 'Romantic & Soft',
+                'artistic': 'Creative & Artistic',
+                'tech': 'Tech & Digital',
+                'warm': 'Warm & Welcoming',
+                'ocean': 'Ocean Depths',
+                'sunset': 'Sunset Glow',
+                'forest': 'Forest & Sky',
+                'royal': 'Royal Purple',
+                'coral': 'Coral Reef',
+                'midnight': 'Midnight Blue',
+                'autumn': 'Autumn Leaves',
+                'mint': 'Mint Fresh',
+                'lavender': 'Lavender Dreams',
+                'citrus': 'Citrus Burst',
+                'monochrome': 'Classic Monochrome',
+                'cherry': 'Cherry Blossom',
+                'emerald': 'Emerald Garden',
+                'bronze': 'Bronze Age',
+                'arctic': 'Arctic Ice',
+                'wine': 'Wine & Roses',
+                'tropical': 'Tropical Paradise',
+                'sage': 'Sage Wisdom',
+                'neon': 'Neon Lights',
+                'desert': 'Desert Sand',
+                'galaxy': 'Galaxy Dreams',
+                'peach': 'Peach Cream',
+                'steel': 'Steel Blue',
+                'sunrise': 'Golden Sunrise',
+                'jade': 'Jade Waters',
+                'plum': 'Plum Elegance',
+                'copper': 'Copper Glow',
+                'storm': 'Storm Clouds',
+                'vanilla': 'Vanilla Cream'
+            };
+
+            const colors = paletteColors[selectedPalette] || ['#667eea', '#764ba2', '#f8fafc'];
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-content';
+            
+            modal.innerHTML = `
+                <div class="brand-guide-header">
+                    <button onclick="this.closest('.modal-overlay').remove()" style="
+                        position: absolute;
+                        top: 20px;
+                        right: 25px;
+                        background: rgba(255, 255, 255, 0.2);
+                        border: none;
+                        color: white;
+                        font-size: 24px;
+                        cursor: pointer;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        backdrop-filter: blur(10px);
+                    ">×</button>
+                    <div style="position: relative; z-index: 1;">
+                        <div style="width: 80px; height: 80px; background: rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; backdrop-filter: blur(10px);">
+                            <i class="fas fa-crown" style="font-size: 32px;"></i>
+                        </div>
+                        <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 10px;">Complete Brand Guide</h1>
+                        <p style="font-size: 18px; opacity: 0.9;">For ${businessDetails.name || 'Your Business'}</p>
+                    </div>
+                </div>
+                
+                <div class="section-card">
+                    <div class="section-icon"><i class="fas fa-building"></i></div>
+                    <h3 style="font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px;">Business Overview</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                        ${businessDetails.name ? `<div><strong>Business Name:</strong><br>${businessDetails.name}</div>` : ''}
+                        ${businessDetails.industry ? `<div><strong>Industry:</strong><br>${businessDetails.industry.charAt(0).toUpperCase() + businessDetails.industry.slice(1)}</div>` : ''}
+                        ${businessDetails.stage ? `<div><strong>Business Stage:</strong><br>${businessDetails.stage.charAt(0).toUpperCase() + businessDetails.stage.slice(1)}</div>` : ''}
+                        ${businessDetails.size ? `<div><strong>Company Size:</strong><br>${businessDetails.size.charAt(0).toUpperCase() + businessDetails.size.slice(1)}</div>` : ''}
+                        ${businessDetails.location ? `<div><strong>Location:</strong><br>${businessDetails.location}</div>` : ''}
+                    </div>
+                    ${businessDetails.description ? `<div style="margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 10px; border-left: 4px solid #667eea;"><strong>Mission & Vision:</strong><br>${businessDetails.description}</div>` : ''}
+                </div>
+
+                <div class="section-card">
+                    <div class="section-icon"><i class="fas fa-users"></i></div>
+                    <h3 style="font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px;">Target Audience</h3>
+                    <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 25px; border-radius: 15px;">
+                        <h4 style="font-size: 20px; font-weight: bold; color: #667eea; margin-bottom: 15px;">${customerNames[selectedCustomer]}</h4>
+                        <p style="color: #64748b; line-height: 1.6;">Your brand should speak directly to this audience with messaging that resonates with their values, needs, and lifestyle. Consider their communication preferences, shopping habits, and decision-making factors when developing your marketing strategy.</p>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-icon"><i class="fas fa-palette"></i></div>
+                    <h3 style="font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px;">Visual Identity</h3>
+                    <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 25px; border-radius: 15px;">
+                        <h4 style="font-size: 20px; font-weight: bold; color: #667eea; margin-bottom: 15px; display: flex; align-items: center;">
+                            ${colors.map(color => `<span class="color-preview" style="background: ${color};"></span>`).join('')}
+                            ${paletteNames[selectedPalette]}
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
+                            ${colors.map((color, index) => `
+                                <div style="text-align: center; padding: 15px; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                    <div style="width: 60px; height: 60px; background: ${color}; border-radius: 50%; margin: 0 auto 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"></div>
+                                    <div style="font-weight: bold; color: #333; font-size: 12px;">${color.toUpperCase()}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-icon"><i class="fas fa-lightbulb"></i></div>
+                    <h3 style="font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px;">Brand Recommendations</h3>
+                    <div style="display: grid; gap: 15px;">
+                        <div style="display: flex; align-items: flex-start; padding: 15px; background: #f8fafc; border-radius: 10px;">
+                            <div style="background: #667eea; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; font-weight: bold;">1</div>
+                            <div><strong>Color Consistency:</strong> Use your chosen color palette consistently across all brand materials including website, business cards, and marketing materials.</div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; padding: 15px; background: #f8fafc; border-radius: 10px;">
+                            <div style="background: #667eea; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; font-weight: bold;">2</div>
+                            <div><strong>Typography:</strong> Choose 2-3 complementary fonts that reflect your brand personality and use them consistently.</div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; padding: 15px; background: #f8fafc; border-radius: 10px;">
+                            <div style="background: #667eea; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; font-weight: bold;">3</div>
+                            <div><strong>Voice & Tone:</strong> Develop a consistent communication style that resonates with your target audience.</div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; padding: 15px; background: #f8fafc; border-radius: 10px;">
+                            <div style="background: #667eea; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; font-weight: bold;">4</div>
+                            <div><strong>Logo Design:</strong> Create a memorable logo that incorporates your color palette and reflects your brand values.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-icon"><i class="fas fa-rocket"></i></div>
+                    <h3 style="font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px;">Next Steps</h3>
+                    <div style="display: grid; gap: 12px;">
+                        <div style="display: flex; align-items: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px;">
+                            <span class="step-number">1</span>
+                            <span>Create a professional logo using your chosen color palette</span>
+                        </div>
+                        <div style="display: flex; align-items: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px;">
+                            <span class="step-number">2</span>
+                            <span>Develop comprehensive brand guidelines document</span>
+                        </div>
+                        <div style="display: flex; align-items: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px;">
+                            <span class="step-number">3</span>
+                            <span>Apply consistent styling to website and marketing materials</span>
+                        </div>
+                        <div style="display: flex; align-items: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px;">
+                            <span class="step-number">4</span>
+                            <span>Create social media templates with your brand colors</span>
+                        </div>
+                        <div style="display: flex; align-items: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px;">
+                            <span class="step-number">5</span>
+                            <span>Design business cards and promotional materials</span>
+                        </div>
+                        <div style="display: flex; align-items: center; padding: 12px; background: linear-gradient(135deg, #000000 0%, #333333 100%); color: white; border-radius: 10px;">
+                            <span class="step-number" style="background: linear-gradient(135deg, #000000 0%, #333333 100%);">6</span>
+                            <span>Create a website with Specturn</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="download-buttons">
+                    <button onclick="downloadPDF()" class="download-btn primary">
+                        <i class="fas fa-download"></i>
+                        Download PDF
+                    </button>
+                    <button onclick="copyToClipboard()" class="download-btn secondary">
+                        <i class="fas fa-copy"></i>
+                        Copy Text
+                    </button>
+                    <button onclick="this.closest('.modal-overlay').remove()" class="download-btn secondary">
+                        <i class="fas fa-times"></i>
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+        }
+
+        function downloadPDF() {
+            try {
+                // Check if jsPDF is available
+                if (typeof window.jspdf === 'undefined') {
+                    alert('PDF generation is currently unavailable. Please try copying the text instead.');
+                    return;
+                }
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Set up the PDF with proper text wrapping
+                const pageWidth = doc.internal.pageSize.width;
+                const margin = 20;
+                const maxWidth = pageWidth - (margin * 2);
+                
+                // Helper function to add wrapped text
+                function addWrappedText(text, x, y, maxWidth, fontSize = 10) {
+                    doc.setFontSize(fontSize);
+                    const lines = doc.splitTextToSize(text, maxWidth);
+                    doc.text(lines, x, y);
+                    return y + (lines.length * (fontSize * 0.5));
+                }
+                
+                // Title
+                doc.setFontSize(20);
+                doc.setTextColor(102, 126, 234);
+                doc.text('COMPLETE BRAND GUIDE', margin, 30);
+                
+                doc.setFontSize(16);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`For ${businessDetails.name || 'Your Business'}`, margin, 45);
+                
+                let yPosition = 65;
+                
+                // Business Overview
+                doc.setFontSize(14);
+                doc.setTextColor(102, 126, 234);
+                doc.text('BUSINESS OVERVIEW', margin, yPosition);
+                yPosition += 15;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                
+                if (businessDetails.name) {
+                    yPosition = addWrappedText(`Business Name: ${businessDetails.name}`, margin, yPosition, maxWidth);
+                    yPosition += 5;
+                }
+                if (businessDetails.industry) {
+                    yPosition = addWrappedText(`Industry: ${businessDetails.industry.charAt(0).toUpperCase() + businessDetails.industry.slice(1)}`, margin, yPosition, maxWidth);
+                    yPosition += 5;
+                }
+                if (businessDetails.stage) {
+                    yPosition = addWrappedText(`Stage: ${businessDetails.stage.charAt(0).toUpperCase() + businessDetails.stage.slice(1)}`, margin, yPosition, maxWidth);
+                    yPosition += 5;
+                }
+                if (businessDetails.size) {
+                    yPosition = addWrappedText(`Size: ${businessDetails.size.charAt(0).toUpperCase() + businessDetails.size.slice(1)}`, margin, yPosition, maxWidth);
+                    yPosition += 5;
+                }
+                if (businessDetails.location) {
+                    yPosition = addWrappedText(`Location: ${businessDetails.location}`, margin, yPosition, maxWidth);
+                    yPosition += 5;
+                }
+                if (businessDetails.description) {
+                    yPosition = addWrappedText(`Description: ${businessDetails.description}`, margin, yPosition, maxWidth);
+                    yPosition += 5;
+                }
+                
+                yPosition += 15;
+                
+                // Target Audience
+                doc.setFontSize(14);
+                doc.setTextColor(102, 126, 234);
+                doc.text('TARGET AUDIENCE', margin, yPosition);
+                yPosition += 15;
+                
+                const customerNames = {
+                    'business': 'Business Professionals',
+                    'families': 'Young Families',
+                    'students': 'Students & Young Adults',
+                    'wellness': 'Health & Wellness Enthusiasts',
+                    'creative': 'Creative Professionals',
+                    'tech': 'Tech Enthusiasts',
+                    'food': 'Food Lovers'
+                };
+                
+                yPosition = addWrappedText(`Primary Customer: ${customerNames[selectedCustomer]}`, margin, yPosition, maxWidth);
+                yPosition += 15;
+                
+                // Visual Identity
+                doc.setFontSize(14);
+                doc.setTextColor(102, 126, 234);
+                doc.text('VISUAL IDENTITY', margin, yPosition);
+                yPosition += 15;
+                
+                const paletteNames = {
+                    'earthy': 'Earthy & Natural', 'minimal': 'Minimal & Sleek', 'vibrant': 'Vibrant & Bold',
+                    'luxury': 'Luxury & Premium', 'retro': 'Retro & Playful', 'calm': 'Calm & Cool',
+                    'industrial': 'Industrial & Strong', 'fresh': 'Fresh & Energetic', 'romantic': 'Romantic & Soft',
+                    'artistic': 'Creative & Artistic', 'tech': 'Tech & Digital', 'warm': 'Warm & Welcoming',
+                    'ocean': 'Ocean Depths', 'sunset': 'Sunset Glow', 'forest': 'Forest & Sky',
+                    'royal': 'Royal Purple', 'coral': 'Coral Reef', 'midnight': 'Midnight Blue',
+                    'autumn': 'Autumn Leaves', 'mint': 'Mint Fresh', 'lavender': 'Lavender Dreams',
+                    'citrus': 'Citrus Burst', 'monochrome': 'Classic Monochrome', 'cherry': 'Cherry Blossom',
+                    'emerald': 'Emerald Garden', 'bronze': 'Bronze Age', 'arctic': 'Arctic Ice',
+                    'wine': 'Wine & Roses', 'tropical': 'Tropical Paradise', 'sage': 'Sage Wisdom',
+                    'neon': 'Neon Lights', 'desert': 'Desert Sand', 'galaxy': 'Galaxy Dreams',
+                    'peach': 'Peach Cream', 'steel': 'Steel Blue', 'sunrise': 'Golden Sunrise',
+                    'jade': 'Jade Waters', 'plum': 'Plum Elegance', 'copper': 'Copper Glow',
+                    'storm': 'Storm Clouds', 'vanilla': 'Vanilla Cream'
+                };
+                
+                yPosition = addWrappedText(`Color Palette: ${paletteNames[selectedPalette]}`, margin, yPosition, maxWidth);
+                yPosition += 5;
+                
+                const colors = paletteColors[selectedPalette] || ['#667eea', '#764ba2', '#f8fafc'];
+                yPosition = addWrappedText(`Colors: ${colors.join(', ')}`, margin, yPosition, maxWidth);
+                yPosition += 15;
+                
+                // Check if we need a new page
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 30;
+                }
+                
+                // Next Steps
+                doc.setFontSize(14);
+                doc.setTextColor(102, 126, 234);
+                doc.text('NEXT STEPS', margin, yPosition);
+                yPosition += 15;
+                
+                const steps = [
+                    '1. Create a professional logo using your chosen color palette',
+                    '2. Develop comprehensive brand guidelines document',
+                    '3. Apply consistent styling to website and marketing materials',
+                    '4. Create social media templates with your brand colors',
+                    '5. Design business cards and promotional materials',
+                    '6. Create a website with Specturn'
+                ];
+                
+                steps.forEach(step => {
+                    yPosition = addWrappedText(step, margin, yPosition, maxWidth);
+                    yPosition += 8;
+                });
+                
+                // Save the PDF
+                doc.save(`${(businessDetails.name || 'Brand').replace(/[^a-zA-Z0-9]/g, '_')}_Guide.pdf`);
+                
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('There was an error generating the PDF. Please try copying the text instead.');
+            }
+        }
+
+        function copyToClipboard() {
+            try {
+                const customerNames = {
+                    'business': 'Business Professionals',
+                    'families': 'Young Families',
+                    'students': 'Students & Young Adults',
+                    'wellness': 'Health & Wellness Enthusiasts',
+                    'creative': 'Creative Professionals',
+                    'tech': 'Tech Enthusiasts',
+                    'food': 'Food Lovers'
+                };
+                
+                const paletteNames = {
+                    'earthy': 'Earthy & Natural', 'minimal': 'Minimal & Sleek', 'vibrant': 'Vibrant & Bold',
+                    'luxury': 'Luxury & Premium', 'retro': 'Retro & Playful', 'calm': 'Calm & Cool',
+                    'industrial': 'Industrial & Strong', 'fresh': 'Fresh & Energetic', 'romantic': 'Romantic & Soft',
+                    'artistic': 'Creative & Artistic', 'tech': 'Tech & Digital', 'warm': 'Warm & Welcoming',
+                    'ocean': 'Ocean Depths', 'sunset': 'Sunset Glow', 'forest': 'Forest & Sky',
+                    'royal': 'Royal Purple', 'coral': 'Coral Reef', 'midnight': 'Midnight Blue',
+                    'autumn': 'Autumn Leaves', 'mint': 'Mint Fresh', 'lavender': 'Lavender Dreams',
+                    'citrus': 'Citrus Burst', 'monochrome': 'Classic Monochrome', 'cherry': 'Cherry Blossom',
+                    'emerald': 'Emerald Garden', 'bronze': 'Bronze Age', 'arctic': 'Arctic Ice',
+                    'wine': 'Wine & Roses', 'tropical': 'Tropical Paradise', 'sage': 'Sage Wisdom',
+                    'neon': 'Neon Lights', 'desert': 'Desert Sand', 'galaxy': 'Galaxy Dreams',
+                    'peach': 'Peach Cream', 'steel': 'Steel Blue', 'sunrise': 'Golden Sunrise',
+                    'jade': 'Jade Waters', 'plum': 'Plum Elegance', 'copper': 'Copper Glow',
+                    'storm': 'Storm Clouds', 'vanilla': 'Vanilla Cream'
+                };
+
+                const colors = paletteColors[selectedPalette] || ['#667eea', '#764ba2', '#f8fafc'];
+                
+                const brandGuide = `🎨 COMPLETE BRAND GUIDE FOR ${businessDetails.name?.toUpperCase() || 'YOUR BUSINESS'}
+
+📋 BUSINESS OVERVIEW
+• Name: ${businessDetails.name || 'Not specified'}
+• Industry: ${businessDetails.industry ? businessDetails.industry.charAt(0).toUpperCase() + businessDetails.industry.slice(1) : 'Not specified'}
+• Stage: ${businessDetails.stage ? businessDetails.stage.charAt(0).toUpperCase() + businessDetails.stage.slice(1) : 'Not specified'}
+• Size: ${businessDetails.size ? businessDetails.size.charAt(0).toUpperCase() + businessDetails.size.slice(1) : 'Not specified'}
+• Location: ${businessDetails.location || 'Not specified'}${businessDetails.description ? `\n• Mission: ${businessDetails.description}` : ''}
+
+🎯 TARGET AUDIENCE
+• Primary Customer: ${customerNames[selectedCustomer] || 'Not specified'}
+• Marketing Focus: Tailor messaging to appeal to this demographic
+• Communication Style: Professional yet approachable
+
+🎨 VISUAL IDENTITY
+• Color Palette: ${paletteNames[selectedPalette] || 'Not specified'}
+• Colors: ${colors.join(', ')}
+• Brand Personality: Reflects your chosen visual style
+• Design Direction: Consistent across all brand materials
+
+💡 BRAND RECOMMENDATIONS
+• Use your chosen colors consistently across all materials
+• Maintain the same tone of voice in all communications
+• Ensure all design elements reflect your brand personality
+• Consider your target audience in every marketing decision
+
+📈 NEXT STEPS
+1. Create a logo using your chosen color palette
+2. Develop brand guidelines document
+3. Apply consistent styling to website and marketing materials
+4. Create social media templates with your brand colors
+5. Design business cards and promotional materials
+6. Create a website with Specturn
+
+This brand guide provides the foundation for building a strong, consistent brand identity!`;
+                
+                // Try modern clipboard API first
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(brandGuide).then(() => {
+                        alert('✅ Brand guide copied to clipboard successfully!');
+                    }).catch(err => {
+                        console.error('Clipboard API failed:', err);
+                        fallbackCopyToClipboard(brandGuide);
+                    });
+                } else {
+                    // Fallback for older browsers
+                    fallbackCopyToClipboard(brandGuide);
+                }
+                
+            } catch (error) {
+                console.error('Copy to clipboard error:', error);
+                alert('❌ Unable to copy to clipboard. Please select and copy the text manually.');
+            }
+        }
+
+        function fallbackCopyToClipboard(text) {
+            try {
+                // Create a temporary textarea element
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                // Try to copy using the older execCommand method
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    alert('✅ Brand guide copied to clipboard successfully!');
+                } else {
+                    throw new Error('execCommand failed');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                // Show the text in a modal for manual copying
+                showTextForManualCopy(text);
+            }
+        }
+
+        function showTextForManualCopy(text) {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin-bottom: 20px; color: #333;">Copy Your Brand Guide</h3>
+                    <p style="margin-bottom: 15px; color: #666;">Please select all the text below and copy it manually:</p>
+                    <textarea readonly style="width: 100%; height: 300px; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-family: monospace; font-size: 12px; resize: none;" onclick="this.select()">${text}</textarea>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button onclick="this.closest('.modal-overlay').remove()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96d011dfe4663a51',t:'MTc1NDgzNDk1NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
